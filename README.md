@@ -101,4 +101,4 @@ stocks.XAppend(arrivals);                               // 在庫品リストに
 
 # その他
 
-Nov-Lab 独自の記述ルールと用語については [NovLabRule.md](https://github.com/Nov-Lab/Nov-Lab/NovLabRule.md) を参照してください。
+Nov-Lab 独自の記述ルールと用語については [NovLabRule.md](https://github.com/Nov-Lab/Nov-Lab/blob/main/NovLabRule.md) を参照してください。
