@@ -46,6 +46,7 @@
     <Compile Include="Base\EscapeConverter.cs" />
     <Compile Include="Base\FourCC.cs" />
     <Compile Include="Base\HexString.cs" />
+    <Compile Include="Base\KeyedList.cs" />
     <Compile Include="Base\NLMath.cs" />
     <Compile Include="Base\RecursionBlocker.cs" />
     <Compile Include="Base\Referrable.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="DebugSupport\AutoTest.cs" />
     <Compile Include="DebugSupport\TestMethodAttribute.cs" />
     <Compile Include="DebugSupport\TestMethodInfo.cs" />
+    <Compile Include="Globalization\StringDetailedComparer.cs" />
     <Compile Include="IO\MailslotBase.cs" />
     <Compile Include="IO\MailslotClient.cs" />
     <Compile Include="DebugStation\DebugUseBlocker.cs" />

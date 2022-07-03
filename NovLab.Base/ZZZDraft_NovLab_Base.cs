@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Xml.Serialization;
 using System.Text;
 using System.Reflection;
+using System.Globalization;
 
 using System.Collections;
 using System.Collections.Generic;
@@ -21,7 +22,6 @@ using NovLab.DebugSupport;
 
 namespace NovLab
 {
-
 
 
 }
