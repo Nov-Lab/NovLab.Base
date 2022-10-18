@@ -1,5 +1,6 @@
 ﻿// @(h)StringDetailedComparer.cs ver 0.00 ( '22.06.30 Nov-Lab ) 作成開始
 // @(h)StringDetailedComparer.cs ver 0.51 ( '22.07.03 Nov-Lab ) ベータ版完成
+// @(h)StringDetailedComparer.cs ver 0.51a( '22.10.18 Nov-Lab ) その他  ：自動テスト用メソッドを追加した。
 
 // @(s)
 // 　【文字列詳細比較子】カルチャや文字列比較オプションを指定した詳細な文字列比較機能を提供します。
@@ -7,6 +8,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics;
+
+using NovLab.DebugSupport;
 
 
 namespace NovLab.Globalization
@@ -16,11 +20,19 @@ namespace NovLab.Globalization
     /// <summary>
     /// 【メモ】文字列の等値比較子について
     /// <code>
-    /// "Cow"と"cow"："Cow"と"Ｃｏｗ"："うし"と"ウシ"：適した Comparer                   ：備考
-    /// ------------：---------------：--------------：----------------------------------：----------------------------------
-    /// 区別する    ：区別する       ：区別する      ：EqualityComparer＜string＞.Default：完全序数比較
-    /// 区別しない  ：区別する       ：区別する      ：StringComparer.OrdinalIgnoreCase  ：大文字と小文字を区別しない序数比較(ファイル名・アカウント名など)
-    /// 区別しない  ：区別しない     ：区別しない    ：NovLab.TextComparer               ：テキスト比較
+    /// よく使うComparer                  ："Cow"と"cow"："Cow"と"Ｃｏｗ"："うし"と"ウシ"：備考
+    /// ----------------------------------：------------：---------------：--------------：----------------------------------
+    /// EqualityComparer＜string＞.Default：区別する    ：区別する       ：区別する      ：完全序数比較
+    /// StringComparer.OrdinalIgnoreCase  ：同一視する  ：区別する       ：区別する      ：大文字と小文字を区別しない序数比較(ファイル名・アカウント名など)
+    /// NovLab.TextComparer               ：同一視する  ：同一視する     ：同一視する    ：カレントカルチャ依存でテキスト比較
+    ///
+    /// カルチャによる合字の扱い："Æ"と"AE" ：備考
+    /// ------------------------：----------：--------------------------------------------
+    /// 序数比較                ：区別する  ：
+    /// 日本語や英語(en-US)     ：同一視する：IgnoreCase でない場合は、"Æ"と"ae"は区別する
+    /// デンマーク語(da-DK)     ：区別する  ：
+    /// 
+    /// ・"辻"(二点しんにょう)と"辻󠄀"(一点しんにょう)は、常に(序数比較であっても)同一視する。
     /// </code>
     /// </summary>
     //====================================================================================================
@@ -44,7 +56,7 @@ namespace NovLab.Globalization
     public class TextComparer : StringDetailedComparer
     {
         // ＜メモ＞
-        // ・CompareOptions.IgnoreSymbols を指定すると、「co-op」だけでなく、「co op」や「co_op」までも、「coop」と同一視してしまう。
+        // ・CompareOptions.IgnoreSymbols を指定すると、「coop」と「co-op」を同一視するだけでなく、「co op」や「co_op」までも「coop」と同一視してしまう。
         //--------------------------------------------------------------------------------
         /// <summary>
         /// 【既定のコンストラクター】テキスト比較子を生成します。
@@ -188,6 +200,69 @@ namespace NovLab.Globalization
             /// 戻り値 = 文字列から取得した並べ替えキーに対応するハッシュコード で関数終了
             return compareInfo.GetSortKey(obj, compareOptions).GetHashCode();
         }
+
+
+        //--------------------------------------------------------------------------------
+        // 自動テスト用メソッド
+        //--------------------------------------------------------------------------------
+#if DEBUG
+        [AutoTestMethod]
+        public static void ZZZ_Equals(IAutoTestExecuter ifExecuter)
+        {
+            // ＜メモ＞中断対象例外のテストはない
+            // ＜メモ＞日本語環境前提でのテスト
+            var textComparer = new TextComparer();
+            Debug.Print("・NovLab.Globalization.TextComparer で比較");
+            SubRoutine(textComparer, "Cow", "cow", true, "大文字と小文字");
+            SubRoutine(textComparer, "Cow", "Ｃｏｗ", true, "半角と全角");
+            SubRoutine(textComparer, "うし", "ウシ", true, "ひらがなとカタカナ");
+            SubRoutine(textComparer, "coop", "co-op", false, "記号を含む");
+            SubRoutine(textComparer, "Æ", "AE", true, "合字(日本語では同一視する)");
+            SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(日本語では同一視する)");
+
+            Debug.Print("・EqualityComparer<string>.Default で比較");
+            SubRoutine(EqualityComparer<string>.Default, "Cow", "cow", false, "大文字と小文字");
+            SubRoutine(EqualityComparer<string>.Default, "Cow", "Ｃｏｗ", false, "半角と全角");
+            SubRoutine(EqualityComparer<string>.Default, "うし", "ウシ", false, "ひらがなとカタカナ");
+            SubRoutine(EqualityComparer<string>.Default, "coop", "co-op", false, "記号を含む");
+            SubRoutine(EqualityComparer<string>.Default, "Æ", "AE", false, "合字(序数比較では区別する)");
+            SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(序数比較でも同一視する)");
+
+            Debug.Print("・StringComparer.OrdinalIgnoreCase で比較");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "cow", true, "大文字と小文字");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナ");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "coop", "co-op", false, "記号を含む");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "Æ", "AE", false, "合字(序数比較では区別する)");
+            SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(序数比較でも同一視する)");
+
+            Debug.Print("・StringComparer.CurrentCultureIgnoreCase で比較");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "cow", true, "大文字と小文字");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナ");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "coop", "co-op", false, "記号を含む");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Æ", "AE", true, "合字(日本語では同一視する)");
+            SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(日本語では同一視する)");
+
+            var myComparer = new StringDetailedComparer(new CultureInfo("en-US"), CompareOptions.None);
+            SubRoutine(myComparer, "Æ", "AE", true, "合字(英語では同一視する)");
+            SubRoutine(myComparer, "辻さん", "辻󠄀さん", true, "異体字(英語でも同一視する)");
+
+            myComparer = new StringDetailedComparer(new CultureInfo("da-DK"), CompareOptions.None);
+            SubRoutine(myComparer, "Æ", "AE", false, "合字(デンマーク語では区別する)");
+            SubRoutine(myComparer, "辻さん", "辻󠄀さん", true, "異体字(デンマーク語でも同一視する)");
+
+            void SubRoutine(IEqualityComparer<string> ifComparer,   // [in ]：文字列
+                            string strValue1,                       // [in ]：文字列1
+                            string strValue2,                       // [in ]：文字列2
+                            AutoTestResultInfo<bool> expectResult,  // [in ]：予想結果(bool値 または 例外の型情報)
+                            string testPattern = null)              // [in ]：テストパターン名[null = 省略]
+
+            {
+                AutoTest.Test(ifComparer.Equals, strValue1, strValue2, expectResult, ifExecuter, testPattern);
+            }
+        }
+#endif
 
     }
 }

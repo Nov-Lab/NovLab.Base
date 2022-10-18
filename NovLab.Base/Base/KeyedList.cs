@@ -197,13 +197,18 @@ namespace NovLab
             stockFruits.Insert(0, new ZZZFruits("Muscat", 800));                    // 先頭位置へ挿入
 
 
+            // リスト内要素に対するキー値変更のテスト
+            //stockFruits["Orange"].Name = "みかん"; // リスト内のある要素のキー値を、他の要素と重複する内容に変更することはできない
+            //stockFruits["Apple"].Name = "りんご";  // 他の要素と重複しない内容ならば変更できる
+
+
             // 入荷フルーツリストを作成
             var arrivalFruits = new KeyedList<string, ZZZFruits>();
             arrivalFruits.Add(new ZZZFruits("Melon", 1200));
             arrivalFruits.Add(new ZZZFruits("Mango", 900));
 
 
-            // XICollection.XAppend のテスト
+            // XICollection.XAppend のテスト：在庫フルーツリストに入荷フルーツリストを追加
             stockFruits.XAppend(arrivalFruits);
             M_PrintList(stockFruits);
             M_Test_KeySearch(stockFruits);
