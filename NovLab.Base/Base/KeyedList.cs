@@ -1,5 +1,6 @@
 ﻿// @(h)KeyedList.cs ver 0.00 ( '22.06.30 Nov-Lab ) 作成開始
 // @(h)KeyedList.cs ver 0.51 ( '22.07.03 Nov-Lab ) ベータ版完成
+// @(h)KeyedList.cs ver 0.51a( '22.10.18 Nov-Lab ) その他  ：デバッグ関数を微修正
 
 // @(s)
 // 　【キー付きリスト】キーとインデックスによってアクセスでき、順序管理や並べ替えもできる、キー付き要素のリストです。
@@ -190,9 +191,9 @@ namespace NovLab
             stockFruits.Add(new ZZZFruits("Peach", 300));
             stockFruits.Add(new ZZZFruits("Orange", 100));
             stockFruits.Add(new ZZZFruits("みかん", 130));
-            try { stockFruits.Add(new ZZZFruits("ミカン", 140)); } catch { }        // テキスト比較の場合は重複する
-            try { stockFruits.Add(new ZZZFruits("ＯＲＡＮＧＥ", 90)); } catch { }   // テキスト比較の場合は重複する
-            try { stockFruits.Add(new ZZZFruits("orange", 110)); } catch { }        // 大文字と小文字を区別しない場合は重複する
+            try { stockFruits.Add(new ZZZFruits("ミカン", 140)); } catch { }        // テキスト比較の場合は"みかん"と重複する
+            try { stockFruits.Add(new ZZZFruits("ＯＲＡＮＧＥ", 90)); } catch { }   // テキスト比較の場合は"Orange"と重複する
+            try { stockFruits.Add(new ZZZFruits("orange", 110)); } catch { }        // 大文字と小文字を区別しない場合は"Orange"と重複する
             stockFruits.Insert(0, new ZZZFruits("Muscat", 800));                    // 先頭位置へ挿入
 
 
@@ -215,7 +216,7 @@ namespace NovLab
 
 
             Debug.Print("●価格でソート");
-            stockFruits.Sort(ZZZFruits.PriceComparison);
+            stockFruits.Sort(ZZZFruits.CompareByPrice);
             M_PrintList(stockFruits);
             M_Test_KeySearch(stockFruits);
 
@@ -223,11 +224,11 @@ namespace NovLab
             Debug.Print("●XML文字列経由で完全コピー");
             var fullcloneFruits = XmlUtil.FullClone(stockFruits);   // 完全コピーを生成
             fullcloneFruits["Orange"].Price = 12345;                // Orangeの価格を変更
-            fullcloneFruits.Remove("Melon");                        // Melonを削除
+            fullcloneFruits.Remove("ミカン");                       // ミカンを削除
             fullcloneFruits.Add(new ZZZFruits("Grape", 500));       // Grapeを追加
-            fullcloneFruits.Sort(ZZZFruits.PriceComparison);        // 価格でソート
+            fullcloneFruits.Sort(ZZZFruits.CompareByPrice);         // 価格でソート
 
-            Debug.Print("＜完全コピー後に内容を変更＞");
+            Debug.Print("＜完全コピー後に内容を変更：Orangeの価格を変更, ミカンを削除, Grapeを追加＞");
             M_PrintList(fullcloneFruits);
             M_Test_KeySearch(fullcloneFruits);
 
@@ -380,6 +381,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
         /// <summary>
         /// 【比較】他のインスタンスと内容を比較します。
+        /// 名前->価格の２段階で比較します。
         /// </summary>
         /// <param name="other">[in ]：比較相手</param>
         /// <returns>
@@ -395,14 +397,14 @@ namespace NovLab
             //------------------------------------------------------------
             /// 他のインスタンスと内容を比較する
             //------------------------------------------------------------
-            var result = NameComparison(this, other);                   //// 名前で比較する
+            var result = CompareByName(this, other);                    //// 名前で比較する
             if (result != 0)
             {                                                           //// 名前が同一でない場合
                 return result;                                          /////  戻り値 = 比較結果値 で関数終了
             }
             else
             {                                                           //// 名前が同一な場合
-                return PriceComparison(this, other);                    /////  価格での比較結果を戻り値とし、関数終了
+                return CompareByPrice(this, other);                     /////  価格での比較結果を戻り値とし、関数終了
             }
         }
 
@@ -426,7 +428,7 @@ namespace NovLab
         /// ・System.Comparison&lt;T&gt; デリゲートに合致するメソッドです。ソート処理に使用します。<br></br>
         /// </remarks>
         //--------------------------------------------------------------------------------
-        public static int NameComparison(ZZZFruits info1, ZZZFruits info2) => info1.Name.CompareTo(info2.Name);
+        public static int CompareByName(ZZZFruits info1, ZZZFruits info2) => info1.Name.CompareTo(info2.Name);
 
 
         //--------------------------------------------------------------------------------
@@ -443,7 +445,7 @@ namespace NovLab
         /// ・System.Comparison&lt;T&gt; デリゲートに合致するメソッドです。ソート処理に使用します。<br></br>
         /// </remarks>
         //--------------------------------------------------------------------------------
-        public static int PriceComparison(ZZZFruits info1, ZZZFruits info2) => info1.Price.CompareTo(info2.Price);
+        public static int CompareByPrice(ZZZFruits info1, ZZZFruits info2) => info1.Price.CompareTo(info2.Price);
 
     }
 #endif
