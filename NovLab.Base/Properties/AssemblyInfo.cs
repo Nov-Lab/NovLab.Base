@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nov-Lab")]
 [assembly: AssemblyProduct("NovLab.Base Class Library")]
-[assembly: AssemblyCopyright("Copyright © 2022 Nov-Lab")]
+[assembly: AssemblyCopyright("Copyright © 2022-2023 Nov-Lab")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // すべての値を指定するか、次を使用してビルド番号とリビジョン番号を既定に設定できます
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.5.1.2")]
-[assembly: AssemblyFileVersion("0.5.1.2")]
+[assembly: AssemblyVersion("0.5.1.3")]
+[assembly: AssemblyFileVersion("0.5.1.3")]
