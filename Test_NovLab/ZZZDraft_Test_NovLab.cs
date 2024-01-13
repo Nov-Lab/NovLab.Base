@@ -9,11 +9,12 @@ using System.Text;
 
 using NovLab;
 using NovLab.DebugSupport;
+using System.Windows.Forms;
 
 
 namespace Test_NovLab
 {
-    class ZZZDraft_Test_NovLab
+    public partial class ZZZDraft_Test_NovLab
     {
 
         [ManualTestMethod("一時的テスト")]
@@ -46,5 +47,18 @@ namespace Test_NovLab
         }
 #endif
 
-    }
-}
+
+#if DEBUG
+        /// <summary>
+        /// 【起動時自動テスト】
+        /// </summary>
+        public static void ZZZ_StartUpTest()
+        {
+            //ZZZTest_FILEandLINE.ZZZ_OverallTest();  // テスト済み
+
+        }
+#endif
+
+        } // class
+
+} // namespace

@@ -5,7 +5,7 @@
 // @(h)XString.cs ver 0.53a( '22.05.14 Nov-Lab ) 微修正  ：一部メソッドを StringBuilder で効率化した。XReplaceNewLineChars を、置換後文字列に CR+LF や CR や LF を指定できるようにして改行文字の統一化に使えるようにした。
 // @(h)XString.cs ver 0.53b( '22.05.15 Nov-Lab ) その他  ：テスト用メソッドを追加した
 // @(h)XString.cs ver 0.54 ( '22.05.18 Nov-Lab ) 機能追加：XRemoveStart を追加した
-// @(h)XString.cs ver 0.54a( '22.05.24 Nov-Lab ) その他  ：コメント整理
+// @(h)XString.cs ver 0.54a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【string 拡張メソッド】System.String クラスに拡張メソッドを追加します。
@@ -79,7 +79,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod(nameof(XString) + ".XRemove(string)")]
-        public static void ZZZ_XRemove_String(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XRemove_String()
         {
             var testStr = "apple, peach, Apple, Peach, Ａｐｐｌｅ, Ｐｅａｃｈ, スモモ, もも肉, モカ";
 
@@ -101,7 +101,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XRemove, testStr, removeString, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XRemove, testStr, removeString, expectResult, testPattern);
             }
         }
 #endif
@@ -128,7 +128,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod(nameof(XString) + ".XRemove(char)")]
-        public static void ZZZ_XRemove_Char(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XRemove_Char()
         {
             var testStr = "apple, peach, Apple, Peach, Ａｐｐｌｅ, Ｐｅａｃｈ, スモモ, もも肉, モカ";
 
@@ -146,7 +146,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XRemove, testStr, removeChar, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XRemove, testStr, removeChar, expectResult, testPattern);
             }
         }
 #endif
@@ -191,7 +191,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod(nameof(XString) + ".XRemove(char[])")]
-        public static void ZZZ_XRemove_Chars(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XRemove_Chars()
         {
             var testStr = "apple, peach, Apple, Peach, Ａｐｐｌｅ, Ｐｅａｃｈ, スモモ, もも肉, モカ";
 
@@ -208,7 +208,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XRemove, testStr, removeChars, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XRemove, testStr, removeChars, expectResult, testPattern);
             }
         }
 #endif
@@ -508,7 +508,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_XReplaceNewLineChars(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XReplaceNewLineChars()
         {
             var testStr = "『古池や\r\n蛙飛びこむ\n水の音』\n\r松尾芭蕉\r-貞享三年-";
 
@@ -530,7 +530,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XReplaceNewLineChars, testStr, newValue, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XReplaceNewLineChars, testStr, newValue, expectResult, testPattern);
             }
         }
 #endif
@@ -584,7 +584,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_XIsValid(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XIsValid()
         {
             // ＜メモ＞中断対象例外のテストはない
             SubRoutine("ABC", true, "通常の文字列");
@@ -600,7 +600,7 @@ namespace NovLab
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
 
             {
-                AutoTest.Test(XIsValid, strValue, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XIsValid, strValue, expectResult, testPattern);
             }
         }
 #endif
@@ -695,7 +695,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod("XString.XLeft/XRight")]
-        public static void ZZZ_XLeft_XRight(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XLeft_XRight()
         {
             string testStr = "AB文字CD";
 
@@ -739,14 +739,14 @@ namespace NovLab
                              AutoTestResultInfo<string> expectResult,   // [in ]：予想結果(文字列 または 例外の型情報)
                              string testPattern = null)                 // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XLeft, testStr, length, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XLeft, testStr, length, expectResult, testPattern);
             }
 
             void SubRoutineR(int length,                                // [in ]：文字数
                              AutoTestResultInfo<string> expectResult,   // [in ]：予想結果(文字列 または 例外の型情報)
                              string testPattern = null)                 // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XRight, testStr, length, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XRight, testStr, length, expectResult, testPattern);
             }
         }
 #endif
@@ -792,7 +792,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod()]
-        public static void ZZZ_XSuppressMultiSpace(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XSuppressMultiSpace()
         {
             SubRoutine("ABC  DEF",
                        "ABC DEF", "正常系1");
@@ -811,7 +811,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XSuppressMultiSpace, strValue, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XSuppressMultiSpace, strValue, expectResult, testPattern);
             }
         }
 #endif
@@ -892,7 +892,7 @@ namespace NovLab
             target.CopyTo(array, 0);                                    //// 対象インスタンスの内容を文字列配列にコピーする
             return array;                                               //// 戻り値 = 文字列配列 で関数終了
         }
-    }
+    } // class
 
 
 #if DEBUG
@@ -911,4 +911,5 @@ namespace NovLab
     //====================================================================================================
     public static class ZZZ_Memo_CRLF { }
 #endif
-}
+
+} // namespace

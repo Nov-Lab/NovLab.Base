@@ -1,6 +1,7 @@
 ﻿// @(h)FourCC.cs ver 0.00 ( '22.03.24 Nov-Lab ) 作成開始
 // @(h)FourCC.cs ver 0.21 ( '22.03.24 Nov-Lab ) アルファ版完成。isprint は仮
 // @(h)FourCC.cs ver 0.21a( '22.05.25 Nov-Lab ) その他  ：自動テスト用メソッドを追加した。機能変更なし。
+// @(h)FourCC.cs ver 0.21b( '24.01.20 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応し、テスト内容も微調整した。機能変更なし。
 
 // @(s)
 // 　【FourCC値操作】FourCC値(Four-Character Codes：4文字コード)の操作機能を提供します。
@@ -75,12 +76,13 @@ namespace NovLab
     /// 【FourCC値操作】FourCC値(Four-Character Codes：4文字コード)の操作機能を提供します。
     /// </summary>
     /// <remarks>
+    /// 補足<br></br>
     /// ・FourCC値(4文字コード)は、識別子などをASCII文字列4文字で表現し、それを32ビット符号なし整数に変換
     ///   したものです。RIFFファイルやマルチメディアファイルなどで使用します。<br></br>
     /// ・4文字に満たない場合は半角スペースで補填しておきます。<br></br>
     /// </remarks>
     //====================================================================================================
-    public static class FourCC
+    public static partial class FourCC
     {
         //[-] 仮のisprint
         /// <summary>
@@ -133,6 +135,31 @@ namespace NovLab
             return "0x" + fourCC.ToString("X8") + ":" + FourCCToString(fourCC);
         }
 
+        //--------------------------------------------------------------------------------
+        // 自動テスト用メソッド
+        //--------------------------------------------------------------------------------
+#if DEBUG
+        [AutoTestMethod]
+        public static void ZZZ_ToString()
+        {
+            SubRoutine(0x44434241, "0x44434241:ABCD", "正常系");
+            SubRoutine(0x33564D57, "0x33564D57:WMV3", "正常系");
+            SubRoutine(0x33560057, "0x33560057:W?V3", "不正系(制御コード文字が含まれる)");
+
+            void SubRoutine(uint fourCC,                            // [in ]：FourCC値
+                            AutoTestResultInfo<string> expectResult,// [in ]：予想結果(FourCC文字列(ASCII文字列4文字) または 例外の型情報)
+                            string testPattern = null)              // [in ]：テストパターン名[null = 省略]
+            {
+                var testOptions = new AutoTestOptions(testPattern)
+                {                                                   // テストオプション
+                    fncArg1RegularString = RegularString.ToHex4byte,// ・引数１(FourCC値)は4バイト用16進数文字列表記
+                };
+
+                AutoTest.Test(ToString, fourCC, expectResult, testOptions);
+            }
+        }
+#endif
+
 
         //--------------------------------------------------------------------------------
         /// <summary>
@@ -170,7 +197,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_FourCCToString(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_FourCCToString()
         {
             SubRoutine(0x44434241, "ABCD", "正常系");
             SubRoutine(0x33564D57, "WMV3", "正常系");
@@ -180,7 +207,12 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,// [in ]：予想結果(FourCC文字列(ASCII文字列4文字) または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(FourCCToString, fourCC, expectResult, ifExecuter, testPattern);
+                var testOptions = new AutoTestOptions(testPattern)
+                {                                                   // テストオプション
+                    fncArg1RegularString = RegularString.ToHex4byte,// ・引数１(FourCC値)は4バイト用16進数文字列表記
+                };
+
+                AutoTest.Test(FourCCToString, fourCC, expectResult, testOptions);
             }
         }
 #endif
@@ -233,11 +265,14 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_StringToFourCC(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_StringToFourCC()
         {
             SubRoutine("ABCD", 0x44434241, "正常系");
             SubRoutine("WMV3", 0x33564D57, "正常系");
             SubRoutine("AVI ", 0x20495641, "正常系(不足分を半角スペースで補填)");
+
+            AutoTest.Print("");
+            AutoTest.Print("＜異常系のテスト＞");
             SubRoutine("W\0V3", typeof(FormatException), "書式不正(制御コード文字が含まれる)");
             SubRoutine("WあV3", typeof(FormatException), "書式不正(全角文字が含まれる)");
             SubRoutine("WMV-3", typeof(FormatException), "書式不正(文字数が多い)");
@@ -248,10 +283,16 @@ namespace NovLab
                             AutoTestResultInfo<uint> expectResult,  // [in ]：予想結果(FourCC値 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(StringToFourCC, fourCCString, expectResult, ifExecuter, testPattern);
+                var testOptions = new AutoTestOptions(testPattern)
+                {                                                       // テストオプション
+                    fncResultRegularString = RegularString.ToHex4byte,  // ・戻り値(FourCC値)は4バイト用16進数文字列表記
+                };
+
+                AutoTest.Test(StringToFourCC, fourCCString, expectResult, testOptions);
             }
         }
 #endif
 
-    }
-}
+    } // class
+
+} // namespace

@@ -2,7 +2,7 @@
 // @(h)Win32API.cs ver 0.51 ( '22.03.27 Nov-Lab ) ベータ版完成
 // @(h)Win32API.cs ver 0.52 ( '22.04.20 Nov-Lab ) 機能追加：CloseHandle を追加した。
 // @(h)Win32API.cs ver 0.52a( '22.04.29 Nov-Lab ) テスト  ：TestWin32Define を使用してWin32API定義が正しいことをテストした。
-// @(h)Win32API.cs ver 0.52b( '22.05.24 Nov-Lab ) その他  ：コメント整理
+// @(h)Win32API.cs ver 0.53 ( '24.01.16 Nov-Lab ) 機能追加：RtlZeroMemory, RtlFillMemory を追加した。
 
 // @(s)
 // 　【Win32API】Win32 API の関数・定数・構造体などを定義します。
@@ -35,6 +35,7 @@ using System.Runtime.InteropServices;
 // LPCWSTR                 System.String(*)    Unicode により装飾
 // FLOAT           float   System.Single       単精度浮動小数点数(32 ビット)
 // DOUBLE          double  System.Double       倍精度浮動小数点数(64 ビット)
+// SIZE_T          N/A     System.IntPtr       typedef ULONG_PTR SIZE_T, *PSIZE_T;
 // 
 // (*) または System.Text.StringBuilder
 // 
@@ -63,7 +64,7 @@ namespace NovLab.Win32
     /// 【Win32API】Win32 API の関数・定数・構造体などを定義します。
     /// </summary>
     //====================================================================================================
-    public static class Win32API
+    public static partial class Win32API
     {
         //====================================================================================================
         // Win32API関連定義
@@ -194,5 +195,45 @@ namespace NovLab.Win32
             out uint lpNumberOfBytesWritten,    //   LPDWORD lpNumberOfBytesWritten,   // 書き込んだバイト数
             IntPtr lpOverlapped                 //   LPOVERLAPPED lpOverlapped         // オーバーラップ構造体のバッファ
         );                                      // );
-    }
-}
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【RtlZeroMemory API関数(GetLastError非対応)】指定されたメモリ範囲に０を書き込みます。
+        /// </summary>
+        /// <param name="Destination">[in ]：先頭アドレス</param>
+        /// <param name="Length">     [in ]：バイト数</param>
+        /// <remarks>
+        /// 補足<br></br>
+        /// ・C言語の memset((Destination),0,(Length)) と同等です。<br></br>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        [DllImport("kernel32", EntryPoint = "RtlZeroMemory", SetLastError = false)]
+        public static extern void RtlZeroMemory(    // VOID RtlZeroMemory(
+            IntPtr Destination,                     //     IN VOID UNALIGNED *Destination,  // 先頭アドレス
+            IntPtr Length                           //     IN SIZE_T          Length        // バイト数
+        );                                          // );
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【RtlFillMemory API関数(GetLastError非対応)】指定されたメモリ範囲に指定されたバイト値を書き込みます。
+        /// </summary>
+        /// <param name="Destination">[in ]：先頭アドレス</param>
+        /// <param name="Length">     [in ]：バイト数</param>
+        /// <param name="Fill">       [in ]：書き込むバイト値</param>
+        /// <remarks>
+        /// 補足<br></br>
+        /// ・C言語の memset((Destination),(Fill),(Length)) と同等です。<br></br>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        [DllImport("kernel32", EntryPoint = "RtlFillMemory", SetLastError = false)]
+        public static extern void RtlFillMemory(    // VOID RtlFillMemory(
+            IntPtr Destination,                     //     IN VOID UNALIGNED *Destination,  // 先頭アドレス
+            IntPtr Length,                          //     IN SIZE_T          Length        // バイト数
+            byte Fill                               //     IN UCHAR           Fill          // 書き込むバイト値
+        );                                          // );
+
+    } // class
+
+} // namespace

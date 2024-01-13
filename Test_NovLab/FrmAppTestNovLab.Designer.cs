@@ -79,7 +79,7 @@ namespace Test_NovLab
             this.LstTestResult.ItemHeight = 12;
             this.LstTestResult.Location = new System.Drawing.Point(8, 224);
             this.LstTestResult.Name = "LstTestResult";
-            this.LstTestResult.Size = new System.Drawing.Size(784, 112);
+            this.LstTestResult.Size = new System.Drawing.Size(784, 208);
             this.LstTestResult.TabIndex = 4;
             this.LstTestResult.SelectedIndexChanged += new System.EventHandler(this.LstTestResult_SelectedIndexChanged);
             // 
@@ -133,11 +133,11 @@ namespace Test_NovLab
             this.TxtTestResult.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.TxtTestResult.Font = new System.Drawing.Font("ＭＳ ゴシック", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.TxtTestResult.Location = new System.Drawing.Point(8, 344);
+            this.TxtTestResult.Location = new System.Drawing.Point(8, 440);
             this.TxtTestResult.Multiline = true;
             this.TxtTestResult.Name = "TxtTestResult";
             this.TxtTestResult.ReadOnly = true;
-            this.TxtTestResult.Size = new System.Drawing.Size(784, 80);
+            this.TxtTestResult.Size = new System.Drawing.Size(784, 113);
             this.TxtTestResult.TabIndex = 5;
             // 
             // label1
@@ -162,7 +162,7 @@ namespace Test_NovLab
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 434);
+            this.ClientSize = new System.Drawing.Size(800, 563);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.TxtTestResult);

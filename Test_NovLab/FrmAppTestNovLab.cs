@@ -1,6 +1,8 @@
 ﻿// @(h)FrmAppTestNovLab.cs ver 0.00 ( '22.04.09 Nov-Lab ) 作成開始
 // @(h)FrmAppTestNovLab.cs ver 0.51 ( '22.05.08 Nov-Lab ) ベータ版完成
-// @(h)FrmAppTestNovLab.cs ver 0.51a( '22.05.25 Nov-Lab ) その他  ：コメント整理
+// @(h)FrmAppTestNovLab.cs ver 0.52 ( '24.01.16 Nov-Lab ) 機能修正：テスト結果の詳細文字列に、実行前のインスタンス内容と実行後のインスタンス内容を追加した。
+// @(h)FrmAppTestNovLab.cs ver 0.53 ( '24.01.17 Nov-Lab ) 機能修正：実行結果と予想結果は文字列で扱うようにした。
+// @(h)FrmAppTestNovLab.cs ver 0.53a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest, ManualTestMethodInfo, AutoTestMethodInfo クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【メイン画面】Test for NovLab のメイン画面です。
@@ -8,7 +10,7 @@
 using System;
 using System.Text;
 using System.Diagnostics;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -28,7 +30,7 @@ namespace Test_NovLab
     //====================================================================================================
     public partial class FrmAppTestNovLab : Form
 #if DEBUG   // DEBUGビルドのみ有効
-                                          , IAutoTestExecuter   // 自動テスト実行者I/F
+                                          , IAutoTestResultListener // 自動テスト結果リスナーI/F
 #endif
     {
         //====================================================================================================
@@ -45,16 +47,18 @@ namespace Test_NovLab
         protected int m_failedCount;
 
 #if DEBUG   // DEBUGビルドのみ有効
+
         /// <summary>
-        /// 【テスト用メソッド情報コレクション】
+        /// 【テスト用メソッド情報リスト】
         /// </summary>
-        protected static Collection<TestMethodInfo> m_testMethodInfos = new Collection<TestMethodInfo>();
-#endif
+        protected static List<TestMethodInfo> m_testMethodInfos = new List<TestMethodInfo>();
+
+#endif  // DEBUG
 
 
 #if DEBUG   // DEBUGビルドのみ有効
         //====================================================================================================
-        // IAutoTestExecuter I/Fの実装
+        // IAutoTestResultListener I/Fの実装
         //====================================================================================================
 
         //--------------------------------------------------------------------------------
@@ -64,17 +68,22 @@ namespace Test_NovLab
         /// <param name="autoTestResult">  [in ]：自動テスト結果種別</param>
         /// <param name="testDescription"> [in ]：テスト内容文字列</param>
         /// <param name="testPattern">     [in ]：テストパターン名[null = 省略]</param>
-        /// <param name="execResult">      [in ]：実行結果(戻り値 または 例外の型情報)</param>
-        /// <param name="expectResult">    [in ]：予想結果(戻り値 または 例外の型情報)</param>
+        /// <param name="execResult">      [in ]：実行結果文字列(戻り値 または 例外の型情報)</param>
+        /// <param name="expectResult">    [in ]：予想結果文字列(戻り値 または 例外の型情報)</param>
         /// <param name="exceptionMessage">[in ]：例外メッセージ</param>
+        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列(null = 静的メソッド)</param>
+        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列(null = 静的メソッド)</param>
         //--------------------------------------------------------------------------------
         public void NoticeTestResult(AutoTestResultKind autoTestResult, string testDescription, string testPattern,
-                                     object execResult, object expectResult, string exceptionMessage)
+                                     string execResult, string expectResult, string exceptionMessage,
+                                     string befContent, string aftContent)
         {
             //------------------------------------------------------------
             /// テスト結果をリストボックスに追加する
             //------------------------------------------------------------
-            AppendTestResult(new TestResult(autoTestResult, testDescription, testPattern, execResult, expectResult, exceptionMessage));
+            AppendTestResult(new TestResult(autoTestResult, testDescription, testPattern,
+                execResult, expectResult, exceptionMessage,
+                befContent, aftContent));
 
             if (autoTestResult == AutoTestResultKind.Succeeded)
             {                                                           //// テスト成功の場合
@@ -85,7 +94,17 @@ namespace Test_NovLab
                 m_failedCount++;                                        /////  テスト失敗件数に１加算する
             }
         }
-#endif
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【メッセージ書き込み】メッセージをテスト結果リストボックスに追加します。
+        /// </summary>
+        /// <param name="message">[in ]：メッセージ文字列</param>
+        //--------------------------------------------------------------------------------
+        public void Print(string message) => AppendTestResult(message);
+
+#endif  // DEBUG
 
 
         //====================================================================================================
@@ -96,10 +115,10 @@ namespace Test_NovLab
         /// <summary>
         /// 【テスト結果追加】テスト結果(TestResult または 文字列)をリストボックスに追加します。
         /// </summary>
-        /// <param name="testResult">[in ]：テスト結果</param>
+        /// <param name="testResult">[in ]：テスト結果(TestResult または 文字列)</param>
         /// <remarks>
         /// 補足<br></br>
-        /// ・AppFormTraceListener からも使用するため public メソッドにしています。<br></br>
+        /// ・<see cref="MainFormTraceListener"/> などの外部クラスからも使用するため public メソッドにしています。<br></br>
         /// </remarks>
         /// 関連リンク： <see cref="TestResult"/>
         //--------------------------------------------------------------------------------
@@ -162,6 +181,8 @@ namespace Test_NovLab
         //--------------------------------------------------------------------------------
         private void FrmAppTestNovLabBase_Load(object sender, EventArgs e)
         {
+            // アセンブリを強制的に読み込ませるためのメソッドを各プロジェクトに用意しておき、
+            // 目印属性によって検索・収集してそれを呼び出す仕組みではどうか？
 #if false   //[-] 保留：NovLab.Base ソリューションからだとアクセスできないので、仕組みを検討する必要がある。
             //------------------------------------------------------------
             /// 未使用のアセンブリを強制的に読み込ませ、テスト用メソッドを列挙可能にする
@@ -171,53 +192,62 @@ namespace Test_NovLab
 #endif
 
 
+            //------------------------------------------------------------
+            // 起動時自動テスト
+            //------------------------------------------------------------
+#if DEBUG   // DEBUGビルドのみ有効
+            ZZZDraft_Test_NovLab.ZZZ_StartUpTest();
+#endif
+
+
 #if DEBUG   // DEBUGビルドのみ有効
             //------------------------------------------------------------
             /// テスト用メソッド情報を収集する
             //------------------------------------------------------------
-            //----------------------------------------
-            // 手動テスト用メソッド
-            //----------------------------------------
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {                                                           //// 読み込み済みアセンブリを繰り返す
                 foreach (var typeInfo in assembly.GetTypes())
                 {                                                       /////  アセンブリ内の型情報を繰り返す
-                    var infos = TestMethodInfo.EnumManualTest(typeInfo);//////   手動テスト用メソッドを列挙する
-                    m_testMethodInfos.XAppend(infos);                   //////   テスト用メソッド情報コレクションに追加する
+                    var infos =
+                        TestMethodInfo.EnumTestMethod(typeInfo);        //////   型情報に含まれるテスト用メソッドを列挙する
+                    m_testMethodInfos.XAppend(infos);                   //////   テスト用メソッド情報リストに追加する
                 }
             }
 
-            //----------------------------------------
-            // 自動テスト用メソッド
-            //----------------------------------------
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {                                                           //// 読み込み済みアセンブリを繰り返す
-                foreach (var typeInfo in assembly.GetTypes())
-                {                                                       /////  アセンブリ内の型情報を繰り返す
-                    var infos = TestMethodInfo.EnumAutoTest(typeInfo);  //////   自動テスト用メソッドを列挙する
-                    m_testMethodInfos.XAppend(infos);                   //////   テスト用メソッド情報コレクションに追加する
-                }
-            }
+            m_testMethodInfos.Sort();                                   //// テスト用メソッド情報リストをソートする
 
 
             //------------------------------------------------------------
-            /// テスト用メソッドの呼び出し規約をチェックする
+            /// 収集したテスト用メソッド情報をリストボックスに追加する
             //------------------------------------------------------------
-            foreach (var info in m_testMethodInfos)
+            foreach (var tmpInfo in m_testMethodInfos)
             {                                                           //// テスト用メソッド情報コレクションを繰り返す
-                info.attributeInfo.CheckRegulation(info.methodInfo);    /////  付加されているテスト用メソッド属性の種類に応じて呼び出し規約をチェックする
-                LstTestMethod.Items.Add(info);                          /////  テスト用メソッドリストボックスに追加する
+                LstTestMethod.Items.Add(tmpInfo);                       /////  テスト用メソッドリストボックスに追加する
             }
 
-#else       // リリースビルドの場合
+#endif  // DEBUG
+
+
+            //------------------------------------------------------------
+            /// リリースビルドの場合は注意文をリストボックスに追加する
+            //------------------------------------------------------------
+#if !DEBUG
             LstTestMethod.Items.Add("DEBUGビルドでのみ動作します");
 #endif
 
 
             //------------------------------------------------------------
-            /// メイン画面出力トレースリスナーを設定する
+            /// デバッグ出力監視リスナーにメイン画面出力トレースリスナーを登録する
             //------------------------------------------------------------
             Debug.Listeners.Add(new MainFormTraceListener(this));
+
+
+            //------------------------------------------------------------
+            /// 自動テスト結果リスナーに登録する
+            //------------------------------------------------------------
+#if DEBUG   // DEBUGビルドのみ有効
+            AutoTest.AddListener(this);
+#endif
         }
 
 
@@ -239,11 +269,11 @@ namespace Test_NovLab
             m_succeededCount = 0;                                       //// テスト成功件数 = 0 にクリアする
             m_failedCount = 0;                                          //// テスト失敗件数 = 0 にクリアする
 
-            foreach (var info in m_testMethodInfos)
+            foreach (var tmpInfo in m_testMethodInfos)
             {                                                           //// テスト用メソッド情報コレクションを繰り返す
-                if (info.attributeInfo is AutoTestMethodAttribute)
+                if (tmpInfo.TestMethodKind == TestMethodKind.Auto)
                 {                                                       /////  自動テスト用メソッドの場合
-                    M_InvokeTest(info);                                 //////   テスト用メソッド実行処理を行う
+                    M_InvokeTest(tmpInfo);                              //////   テスト用メソッド実行処理を行う
                 }
             }
 
@@ -259,7 +289,7 @@ namespace Test_NovLab
             }
 
             LstTestResult.Focus();                                      //// テスト結果リストボックスへフォーカスを移動する
-#endif
+#endif  // DEBUG
         }
 
 
@@ -342,23 +372,9 @@ namespace Test_NovLab
             //------------------------------------------------------------
             /// テスト用メソッド情報に従ってテストを実行する
             //------------------------------------------------------------
-            AppendTestResult("■" + testMethodInfo.ToString());                 //// テスト結果にテスト用メソッドの表示名を追加する
-
-            // ＜メモ＞
-            // ・派生クラス -> 基本クラス の順に判定・処理すること
-            if (testMethodInfo.attributeInfo is AutoTestMethodAttribute)
-            {                                                                   //// 自動テスト用メソッドの場合
-                AutoTestMethodAttribute.Invoke(testMethodInfo.methodInfo, this);/////  自動テスト用メソッドを実行する
-                AppendTestResult("");                                           /////  テスト結果に空行を追加する
-                return;                                                         /////  関数終了
-            }
-
-            if (testMethodInfo.attributeInfo is ManualTestMethodAttribute)
-            {                                                                   //// 手動テスト用メソッドの場合
-                ManualTestMethodAttribute.Invoke(testMethodInfo.methodInfo);    /////  テスト用メソッドを実行する
-                AppendTestResult("");                                           /////  テスト結果に空行を追加する
-                return;                                                         /////  関数終了
-            }
+            AppendTestResult("■" + testMethodInfo.ToString());         //// テスト結果にテスト用メソッドの表示名を追加する
+            testMethodInfo.Invoke();                                    //// テスト用メソッドを実行する
+            AppendTestResult("");                                       //// テスト結果に空行を追加する
         }
 #endif
 
@@ -489,5 +505,6 @@ namespace Test_NovLab
 #endif
         }
 
-    }
-}
+    } // class
+
+} // namespace

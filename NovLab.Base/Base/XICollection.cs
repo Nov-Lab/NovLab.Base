@@ -1,5 +1,6 @@
 ﻿// @(h)XICollection.cs ver 0.00 ( '22.05.18 Nov-Lab ) 作成開始
 // @(h)XICollection.cs ver 0.21 ( '22.05.19 Nov-Lab ) アルファ版完成
+// @(h)XICollection.cs ver 0.21a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【ICollection 拡張メソッド】コレクションI/Fに拡張メソッドを追加します。
@@ -48,7 +49,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_XToArray(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XToArray()
         {
             var floatResult = new float[] { 1.23f, 2.34f, 3.45f };      // floatコレクションの予想結果
             var strResult = new string[] { "ABC", "あいう", "漢字" };   // stringコレクションの予想結果
@@ -60,20 +61,20 @@ namespace NovLab
             {
                 var testCol = new Collection<float>();
                 testCol.Add(1.23f); testCol.Add(2.34f); testCol.Add(3.45f);
-                AutoTest.Test(XToArray, testCol, floatResult, ifExecuter, "Collection<float> から配列を作成");
+                AutoTest.TestX(XToArray, testCol, floatResult, "Collection<float> から配列を作成");
             }
 
             // List<float>
             {
                 var testList = new List<float>();
                 testList.Add(1.23f); testList.Add(2.34f); testList.Add(3.45f);
-                AutoTest.Test(XToArray, testList, floatResult, ifExecuter, "List<float> から配列を作成");
+                AutoTest.TestX(XToArray, testList, floatResult, "List<float> から配列を作成");
             }
 
             // float[]
             {
                 var testArray = new float[3] { 1.23f, 2.34f, 3.45f };
-                AutoTest.Test(XToArray, testArray, floatResult, ifExecuter, "float[] から配列を作成");
+                AutoTest.TestX(XToArray, testArray, floatResult, "float[] から配列を作成");
             }
 
 
@@ -84,20 +85,20 @@ namespace NovLab
             {
                 var testCol = new Collection<string>();
                 testCol.Add("ABC"); testCol.Add("あいう"); testCol.Add("漢字");
-                AutoTest.Test(XToArray, testCol, strResult, ifExecuter, "Collection<string> から配列を作成");
+                AutoTest.TestX(XToArray, testCol, strResult, "Collection<string> から配列を作成");
             }
 
             // List<string>
             {
                 var testList = new List<string>();
                 testList.Add("ABC"); testList.Add("あいう"); testList.Add("漢字");
-                AutoTest.Test(XToArray, testList, strResult, ifExecuter, "List<string> から配列を作成");
+                AutoTest.TestX(XToArray, testList, strResult, "List<string> から配列を作成");
             }
 
             // string[]
             {
                 var testArray = new string[3] { "ABC", "あいう", "漢字" };
-                AutoTest.Test(XToArray, testArray, strResult, ifExecuter, "string[] から配列を作成");
+                AutoTest.TestX(XToArray, testArray, strResult, "string[] から配列を作成");
             }
         }
 #endif
@@ -143,7 +144,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_XAppend(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XAppend()
         {
             var floatAppend = new float[] { 4.56f, 5.67f };     // floatコレクションの追加内容
             var strAppend = new string[] { "追加", "文字列" };  // stringコレクションの追加内容
@@ -162,20 +163,20 @@ namespace NovLab
             {
                 var testCol = new Collection<float>();
                 testCol.Add(1.23f); testCol.Add(2.34f); testCol.Add(3.45f);
-                AutoTest.TestX(XAppend, testCol, floatAppend, new Collection<float>(floatResult), ifExecuter, "Collection<float> に配列を追加");
+                AutoTest.TestX(XAppend, testCol, floatAppend, new Collection<float>(floatResult), "Collection<float> に配列を追加");
             }
 
             // List<float>
             {
                 var testList = new List<float>();
                 testList.Add(1.23f); testList.Add(2.34f); testList.Add(3.45f);
-                AutoTest.TestX(XAppend, testList, floatAppend, new List<float>(floatResult), ifExecuter, "List<float> に配列を追加");
+                AutoTest.TestX(XAppend, testList, floatAppend, new List<float>(floatResult), "List<float> に配列を追加");
             }
 
             // float[]
             {
                 var testArray = new float[3] { 1.23f, 2.34f, 3.45f };
-                AutoTest.TestX(XAppend, testArray, floatAppend, typeof(System.NotSupportedException), ifExecuter, "float[] に配列を追加：固定サイズなので例外");
+                AutoTest.TestX(XAppend, testArray, floatAppend, typeof(System.NotSupportedException), "float[] に配列を追加：固定サイズなので例外");
             }
 
 
@@ -186,20 +187,20 @@ namespace NovLab
             {
                 var testCol = new Collection<string>();
                 testCol.Add("ABC"); testCol.Add("あいう"); testCol.Add("漢字");
-                AutoTest.TestX(XAppend, testCol, strAppend, new Collection<string>(strResult), ifExecuter, "Collection<string> に配列を追加");
+                AutoTest.TestX(XAppend, testCol, strAppend, new Collection<string>(strResult), "Collection<string> に配列を追加");
             }
 
             // List<string>
             {
                 var testList = new List<string>();
                 testList.Add("ABC"); testList.Add("あいう"); testList.Add("漢字");
-                AutoTest.TestX(XAppend, testList, strAppend, new List<string>(strResult), ifExecuter, "List<string> に配列を追加");
+                AutoTest.TestX(XAppend, testList, strAppend, new List<string>(strResult), "List<string> に配列を追加");
             }
 
             // string[]
             {
                 var testArray = new string[3] { "ABC", "あいう", "漢字" };
-                AutoTest.TestX(XAppend, testArray, strAppend, typeof(System.NotSupportedException), ifExecuter, "string[] に配列を追加：固定サイズなので例外");
+                AutoTest.TestX(XAppend, testArray, strAppend, typeof(System.NotSupportedException), "string[] に配列を追加：固定サイズなので例外");
             }
 
 
@@ -210,14 +211,14 @@ namespace NovLab
             {
                 var testCol = new Collection<float>();
                 testCol.Add(1.23f); testCol.Add(2.34f); testCol.Add(3.45f);
-                AutoTest.TestX(XAppend, testCol, testCol, new Collection<float>(floatTwice), ifExecuter, "Collection<float> に自分自身を追加");
+                AutoTest.TestX(XAppend, testCol, testCol, new Collection<float>(floatTwice), "Collection<float> に自分自身を追加");
             }
 
             // Collection<string>
             {
                 var testCol = new Collection<string>();
                 testCol.Add("ABC"); testCol.Add("あいう"); testCol.Add("漢字");
-                AutoTest.TestX(XAppend, testCol, testCol, new Collection<string>(strTwice), ifExecuter, "Collection<string> に自分自身を追加");
+                AutoTest.TestX(XAppend, testCol, testCol, new Collection<string>(strTwice), "Collection<string> に自分自身を追加");
             }
         }
 #endif
@@ -412,5 +413,6 @@ namespace NovLab
         }
 #endif
 
-    }
-}
+    } // class
+
+} // namespace

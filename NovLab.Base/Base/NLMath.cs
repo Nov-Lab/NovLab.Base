@@ -3,6 +3,8 @@
 // @(h)NLMath.cs ver 0.22 ( '22.05.09 Nov-Lab ) 機能追加：XNLMath.XIsInRange の int版を追加した。
 // @(h)NLMath.cs ver 0.22a( '22.05.17 Nov-Lab ) その他  ：テスト用メソッドを追加した。機能変更なし。
 // @(h)NLMath.cs ver 0.22b( '22.05.18 Nov-Lab ) その他  ：AutoTestResultInfo のクラス名変更に対応した。機能変更なし。
+// @(h)NLMath.cs ver 0.23 ( '24.01.14 Nov-Lab ) 機能追加：XNLMath.XIsInRange の long版と ulong版を追加した。
+// @(h)NLMath.cs ver 0.23a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【数学関数】数学関数を提供します。
@@ -87,15 +89,15 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod("byte.XIsInRange")]
-        public static void ZZZ_XIsInRange_byte(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XIsInRange_byte()
         {
-            SubRoutine(0, 32, 127, false);
-            SubRoutine(32, 32, 127, true);
-            SubRoutine(127, 32, 127, true);
-            SubRoutine(31, 32, 127, false);
-            SubRoutine(128, 32, 127, false);
-            SubRoutine(byte.MinValue, 32, 127, false, "MinValueを指定");
-            SubRoutine(byte.MaxValue, 32, 127, false, "MaxValueを指定");
+            SubRoutine(0, 32, 127, false, "0 は範囲外");
+            SubRoutine(32, 32, 127, true, "最小値は範囲内");
+            SubRoutine(127, 32, 127, true, "最大値は範囲内");
+            SubRoutine(31, 32, 127, false, "最小値-1は範囲外");
+            SubRoutine(128, 32, 127, false, "最小値+1は範囲外");
+            SubRoutine(byte.MinValue, 32, 127, false, "MinValueは範囲外");
+            SubRoutine(byte.MaxValue, 32, 127, false, "MaxValueは範囲外");
 
             void SubRoutine(byte value,                             // [in ]：数値
                             byte minValue,                          // [in ]：最小値
@@ -103,7 +105,7 @@ namespace NovLab
                             AutoTestResultInfo<bool> expectResult,  // [in ]：予想結果(bool値 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XIsInRange, value, minValue, maxValue, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XIsInRange, value, minValue, maxValue, expectResult, testPattern);
             }
         }
 #endif
@@ -128,15 +130,15 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod("int.XIsInRange")]
-        public static void ZZZ_XIsInRange_int(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XIsInRange_int()
         {
-            SubRoutine(0, -100, 200, true);
-            SubRoutine(-100, -100, 200, true);
-            SubRoutine(200, -100, 200, true);
-            SubRoutine(-101, -100, 200, false);
-            SubRoutine(201, -100, 200, false);
-            SubRoutine(int.MinValue, -100, 200, false, "MinValueを指定");
-            SubRoutine(int.MaxValue, -100, 200, false, "MaxValueを指定");
+            SubRoutine(0, -100, 200, true, "0 は範囲内");
+            SubRoutine(-100, -100, 200, true, "最小値は範囲内");
+            SubRoutine(200, -100, 200, true, "最大値は範囲内");
+            SubRoutine(-101, -100, 200, false, "最小値-1は範囲外");
+            SubRoutine(201, -100, 200, false, "最小値+1は範囲外");
+            SubRoutine(int.MinValue, -100, 200, false, "MinValueは範囲外");
+            SubRoutine(int.MaxValue, -100, 200, false, "MaxValueは範囲外");
 
             void SubRoutine(int value,                              // [in ]：数値
                             int minValue,                           // [in ]：最小値
@@ -144,10 +146,93 @@ namespace NovLab
                             AutoTestResultInfo<bool> expectResult,  // [in ]：予想結果(bool値 または 例外の型情報)
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XIsInRange, value, minValue, maxValue, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XIsInRange, value, minValue, maxValue, expectResult, testPattern);
             }
         }
 #endif
 
-    }
-}
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【long値範囲内チェック】long値が最小値から最大値の範囲内にあるかどうかをチェックします。
+        /// </summary>
+        /// <param name="value">   [in ]：値</param>
+        /// <param name="minValue">[in ]：最小値</param>
+        /// <param name="maxValue">[in ]：最大値</param>
+        /// <returns>
+        /// チェック結果[true = 範囲内 / false = 範囲外]
+        /// </returns>
+        //--------------------------------------------------------------------------------
+        public static bool XIsInRange(this long value, long minValue, long maxValue)
+            => NLMath<long>.IsInRange(value, minValue, maxValue);
+
+        //--------------------------------------------------------------------------------
+        // 自動テスト用メソッド
+        //--------------------------------------------------------------------------------
+#if DEBUG
+        [AutoTestMethod("long.XIsInRange")]
+        public static void ZZZ_XIsInRange_long()
+        {
+            SubRoutine(0, -100, 200, true, "0 は範囲内");
+            SubRoutine(-100, -100, 200, true, "最小値は範囲内");
+            SubRoutine(200, -100, 200, true, "最大値は範囲内");
+            SubRoutine(-101, -100, 200, false, "最小値-1は範囲外");
+            SubRoutine(201, -100, 200, false, "最小値+1は範囲外");
+            SubRoutine(long.MinValue, -100, 200, false, "MinValueは範囲外");
+            SubRoutine(long.MaxValue, -100, 200, false, "MaxValueは範囲外");
+
+            void SubRoutine(long value,                             // [in ]：数値
+                            long minValue,                          // [in ]：最小値
+                            long maxValue,                          // [in ]：最大値
+                            AutoTestResultInfo<bool> expectResult,  // [in ]：予想結果(bool値 または 例外の型情報)
+                            string testPattern = null)              // [in ]：テストパターン名[null = 省略]
+            {
+                AutoTest.TestX(XIsInRange, value, minValue, maxValue, expectResult, testPattern);
+            }
+        }
+#endif
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【ulong値範囲内チェック】ulong値が最小値から最大値の範囲内にあるかどうかをチェックします。
+        /// </summary>
+        /// <param name="value">   [in ]：値</param>
+        /// <param name="minValue">[in ]：最小値</param>
+        /// <param name="maxValue">[in ]：最大値</param>
+        /// <returns>
+        /// チェック結果[true = 範囲内 / false = 範囲外]
+        /// </returns>
+        //--------------------------------------------------------------------------------
+        public static bool XIsInRange(this ulong value, ulong minValue, ulong maxValue)
+            => NLMath<ulong>.IsInRange(value, minValue, maxValue);
+
+        //--------------------------------------------------------------------------------
+        // 自動テスト用メソッド
+        //--------------------------------------------------------------------------------
+#if DEBUG
+        [AutoTestMethod("ulong.XIsInRange")]
+        public static void ZZZ_XIsInRange_ulong()
+        {
+            SubRoutine(0, 32, 123456789012345, false, "0 は範囲外");
+            SubRoutine(32, 32, 123456789012345, true, "最小値は範囲内");
+            SubRoutine(123456789012345, 32, 123456789012345, true, "最大値は範囲内");
+            SubRoutine(31, 32, 123456789012345, false, "最小値-1は範囲外");
+            SubRoutine(123456789012346, 32, 123456789012345, false, "最小値+1は範囲外");
+            SubRoutine(ulong.MinValue, 32, 123456789012345, false, "MinValueは範囲外");
+            SubRoutine(ulong.MaxValue, 32, 123456789012345, false, "MaxValueは範囲外");
+
+            void SubRoutine(ulong value,                            // [in ]：数値
+                            ulong minValue,                         // [in ]：最小値
+                            ulong maxValue,                         // [in ]：最大値
+                            AutoTestResultInfo<bool> expectResult,  // [in ]：予想結果(bool値 または 例外の型情報)
+                            string testPattern = null)              // [in ]：テストパターン名[null = 省略]
+            {
+                AutoTest.TestX(XIsInRange, value, minValue, maxValue, expectResult, testPattern);
+            }
+        }
+#endif
+
+    } // class
+
+} // namespace

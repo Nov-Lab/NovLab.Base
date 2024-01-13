@@ -61,6 +61,7 @@ namespace NovLabDraft
         //--------------------------------------------------------------------------------
         [Conditional("VERBOSELOG")]
         public static void Print(string message) => Debug.Print(message);
-    }
 
-}
+    } // class
+
+} // namespace

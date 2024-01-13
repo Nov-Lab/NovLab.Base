@@ -1,6 +1,6 @@
 ﻿// @(h)XStringBuilder.cs ver 0.00 ( '22.05.15 Nov-Lab ) 作成開始
 // @(h)XStringBuilder.cs ver 0.21 ( '22.05.15 Nov-Lab ) アルファ版完成
-// @(h)XStringBuilder.cs ver 0.21a( '22.05.18 Nov-Lab ) その他  ：クラス名変更に対応した(AutoTestResultInfo, ManualTestMethodAttribute)。機能変更なし。
+// @(h)XStringBuilder.cs ver 0.21a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【StringBuilder 拡張メソッド】System.Text.StringBuilder クラスに拡張メソッドを追加します。
@@ -98,7 +98,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod("XStringBuilder.XCutLeft/XCutRight")]
-        public static void ZZZ_XCutLeft_XCutRight(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XCutLeft_XCutRight()
         {
             var testStr = new StringBuilder("AB文字CD");
             SubRoutineL(0, "");
@@ -134,14 +134,14 @@ namespace NovLab
                              AutoTestResultInfo<string> expectResult,   // [in ]：予想結果(文字列 または 例外の型情報)
                              string testPattern = null)                 // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XCutLeft, testStr, length, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XCutLeft, testStr, length, expectResult, testPattern);
             }
 
             void SubRoutineR(int length,                                // [in ]：文字数
                              AutoTestResultInfo<string> expectResult,   // [in ]：予想結果(文字列 または 例外の型情報)
                              string testPattern = null)                 // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XCutRight, testStr, length, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XCutRight, testStr, length, expectResult, testPattern);
             }
         }
 #endif
@@ -197,7 +197,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_XCutToken(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_XCutToken()
         {
             var testStr = new StringBuilder("apple, スモモ,,もも肉, ,モカ");
             SubRoutine(",", "apple", "カンマ区切り - 1回目");
@@ -232,7 +232,7 @@ namespace NovLab
                             AutoTestResultInfo<string> expectResult,    // [in ]：予想結果(文字列 または 例外の型情報)
                             string testPattern = null)                  // [in ]：テストパターン名[null = 省略]
             {
-                AutoTest.Test(XCutToken, testStr, separator, expectResult, ifExecuter, testPattern);
+                AutoTest.TestX(XCutToken, testStr, separator, expectResult, testPattern);
             }
         }
 #endif
@@ -242,7 +242,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
 #if DEBUG
         [ManualTestMethod]
-        public static void ZZZ_XCutToken()
+        public static void ZZZ_XCutTokenManualTest()
         {
             SubRoutine("『古池や 蛙飛びこむ 水の音』  松尾芭蕉 -貞享三年-", " ");
             SubRoutine("<key> = <value>", "=");
@@ -262,6 +262,6 @@ namespace NovLab
         }
 #endif
 
+    } // class
 
-    }
-}
+} // namespace

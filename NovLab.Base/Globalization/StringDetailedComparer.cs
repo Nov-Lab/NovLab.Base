@@ -1,6 +1,6 @@
 ﻿// @(h)StringDetailedComparer.cs ver 0.00 ( '22.06.30 Nov-Lab ) 作成開始
 // @(h)StringDetailedComparer.cs ver 0.51 ( '22.07.03 Nov-Lab ) ベータ版完成
-// @(h)StringDetailedComparer.cs ver 0.51a( '22.10.18 Nov-Lab ) その他  ：自動テスト用メソッドを追加した。
+// @(h)StringDetailedComparer.cs ver 0.51a( '24.01.20 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
 
 // @(s)
 // 　【文字列詳細比較子】カルチャや文字列比較オプションを指定した詳細な文字列比較機能を提供します。
@@ -207,43 +207,48 @@ namespace NovLab.Globalization
         //--------------------------------------------------------------------------------
 #if DEBUG
         [AutoTestMethod]
-        public static void ZZZ_Equals(IAutoTestExecuter ifExecuter)
+        public static void ZZZ_Equals()
         {
             // ＜メモ＞中断対象例外のテストはない
             // ＜メモ＞日本語環境前提でのテスト
             var textComparer = new TextComparer();
-            Debug.Print("・NovLab.Globalization.TextComparer で比較");
-            SubRoutine(textComparer, "Cow", "cow", true, "大文字と小文字");
-            SubRoutine(textComparer, "Cow", "Ｃｏｗ", true, "半角と全角");
-            SubRoutine(textComparer, "うし", "ウシ", true, "ひらがなとカタカナ");
-            SubRoutine(textComparer, "coop", "co-op", false, "記号を含む");
+            AutoTest.Print("＜NovLab.Globalization.TextComparer で比較：テキスト比較＞");
+            SubRoutine(textComparer, "Cow", "cow", true, "大文字と小文字は同一視");
+            SubRoutine(textComparer, "Cow", "Ｃｏｗ", true, "半角と全角は同一視");
+            SubRoutine(textComparer, "うし", "ウシ", true, "ひらがなとカタカナは同一視");
+            SubRoutine(textComparer, "coop", "co-op", false, "記号を含むものは区別");
             SubRoutine(textComparer, "Æ", "AE", true, "合字(日本語では同一視する)");
             SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(日本語では同一視する)");
+            AutoTest.Print("");
 
-            Debug.Print("・EqualityComparer<string>.Default で比較");
-            SubRoutine(EqualityComparer<string>.Default, "Cow", "cow", false, "大文字と小文字");
-            SubRoutine(EqualityComparer<string>.Default, "Cow", "Ｃｏｗ", false, "半角と全角");
-            SubRoutine(EqualityComparer<string>.Default, "うし", "ウシ", false, "ひらがなとカタカナ");
-            SubRoutine(EqualityComparer<string>.Default, "coop", "co-op", false, "記号を含む");
+            AutoTest.Print("＜EqualityComparer<string>.Default で比較：大文字と小文字を区別する序数比較＞");
+            SubRoutine(EqualityComparer<string>.Default, "Cow", "cow", false, "大文字と小文字は区別");
+            SubRoutine(EqualityComparer<string>.Default, "Cow", "Ｃｏｗ", false, "半角と全角は区別");
+            SubRoutine(EqualityComparer<string>.Default, "うし", "ウシ", false, "ひらがなとカタカナは区別");
+            SubRoutine(EqualityComparer<string>.Default, "coop", "co-op", false, "記号を含むものは区別");
             SubRoutine(EqualityComparer<string>.Default, "Æ", "AE", false, "合字(序数比較では区別する)");
             SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(序数比較でも同一視する)");
+            AutoTest.Print("");
 
-            Debug.Print("・StringComparer.OrdinalIgnoreCase で比較");
-            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "cow", true, "大文字と小文字");
-            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角");
-            SubRoutine(StringComparer.OrdinalIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナ");
-            SubRoutine(StringComparer.OrdinalIgnoreCase, "coop", "co-op", false, "記号を含む");
+            AutoTest.Print("＜StringComparer.OrdinalIgnoreCase で比較：大文字と小文字を同一視する序数比較＞");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "cow", true, "大文字と小文字は同一視");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角は区別");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナは区別");
+            SubRoutine(StringComparer.OrdinalIgnoreCase, "coop", "co-op", false, "記号を含むものは区別");
             SubRoutine(StringComparer.OrdinalIgnoreCase, "Æ", "AE", false, "合字(序数比較では区別する)");
             SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(序数比較でも同一視する)");
+            AutoTest.Print("");
 
-            Debug.Print("・StringComparer.CurrentCultureIgnoreCase で比較");
-            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "cow", true, "大文字と小文字");
-            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角");
-            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナ");
-            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "coop", "co-op", false, "記号を含む");
+            AutoTest.Print("＜StringComparer.CurrentCultureIgnoreCase で比較：大文字と小文字を同一視するカルチャベース比較＞");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "cow", true, "大文字と小文字は同一視");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Cow", "Ｃｏｗ", false, "半角と全角は区別");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "うし", "ウシ", false, "ひらがなとカタカナは区別");
+            SubRoutine(StringComparer.CurrentCultureIgnoreCase, "coop", "co-op", false, "記号を含むものは区別");
             SubRoutine(StringComparer.CurrentCultureIgnoreCase, "Æ", "AE", true, "合字(日本語では同一視する)");
             SubRoutine(textComparer, "辻さん", "辻󠄀さん", true, "異体字(日本語では同一視する)");
+            AutoTest.Print("");
 
+            AutoTest.Print("＜カルチャによる違い＞");
             var myComparer = new StringDetailedComparer(new CultureInfo("en-US"), CompareOptions.None);
             SubRoutine(myComparer, "Æ", "AE", true, "合字(英語では同一視する)");
             SubRoutine(myComparer, "辻さん", "辻󠄀さん", true, "異体字(英語でも同一視する)");
@@ -259,10 +264,11 @@ namespace NovLab.Globalization
                             string testPattern = null)              // [in ]：テストパターン名[null = 省略]
 
             {
-                AutoTest.Test(ifComparer.Equals, strValue1, strValue2, expectResult, ifExecuter, testPattern);
+                AutoTest.Test(ifComparer.Equals, strValue1, strValue2, expectResult, testPattern);
             }
         }
 #endif
 
-    }
-}
+    } // class
+
+} // namespace
