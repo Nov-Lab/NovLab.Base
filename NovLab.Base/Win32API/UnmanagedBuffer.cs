@@ -1,6 +1,7 @@
 ﻿// @(h)UnmanagedBuffer.cs ver 0.00 ( '24.01.13 Nov-Lab ) 作成開始
 // @(h)UnmanagedBuffer.cs ver 0.51 ( '24.01.16 Nov-Lab ) ベータ版完成
 // @(h)UnmanagedBuffer.cs ver 0.51a( '24.01.20 Nov-Lab ) 仕変対応：AutoTest クラスの仕様変更に対応した。機能変更なし。
+// @(h)UnmanagedBuffer.cs ver 0.51b( '24.01.23 Nov-Lab ) その他  ：コメントを微修正
 
 // @(s)
 // 　【アンマネージバッファー】アンマネージメモリ上にバッファーを作成する機能を提供します。
@@ -278,6 +279,7 @@ namespace NovLab.Win32
         /// <summary>
         /// 【フィル】バッファー全体に指定されたバイト値を書き込みます。
         /// </summary>
+        /// <param name="value">[in ]：書き込むバイト値</param>
         /// <exception cref="ObjectDisposedException">すでにメモリを解放済みです。</exception>
         //--------------------------------------------------------------------------------
         public void FillMemory(byte value)
