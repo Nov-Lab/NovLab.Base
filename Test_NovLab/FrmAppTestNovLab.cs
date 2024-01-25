@@ -3,6 +3,7 @@
 // @(h)FrmAppTestNovLab.cs ver 0.52 ( '24.01.16 Nov-Lab ) 機能修正：テスト結果の詳細文字列に、実行前のインスタンス内容と実行後のインスタンス内容を追加した。
 // @(h)FrmAppTestNovLab.cs ver 0.53 ( '24.01.17 Nov-Lab ) 機能修正：実行結果と予想結果は文字列で扱うようにした。
 // @(h)FrmAppTestNovLab.cs ver 0.53a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest, ManualTestMethodInfo, AutoTestMethodInfo クラスの仕様変更に対応した。機能変更なし。
+// @(h)FrmAppTestNovLab.cs ver 0.54 ( '24.01.26 Nov-Lab ) 機能追加：テスト用フォームを自動的に検索・収集し、メニュー操作で表示できるようにした。
 
 // @(s)
 // 　【メイン画面】Test for NovLab のメイン画面です。
@@ -200,6 +201,35 @@ namespace Test_NovLab
 #endif
 
 
+            //------------------------------------------------------------
+            /// テスト用フォーム表示メソッドを収集し、メニュー項目を生成・追加する
+            //------------------------------------------------------------
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {                                                           //// 読み込み済みアセンブリを繰り返す
+                foreach (var typeInfo in assembly.GetTypes())
+                {                                                       /////  アセンブリ内の型情報を繰り返す
+                    foreach (var methodInfo in typeInfo.GetMethods())
+                    {                                                   //////   メソッド情報を繰り返す
+                        var attributes =                                ///////    テスト用フォーム表示メソッド属性の配列を取得する
+                            methodInfo.GetCustomAttributes(typeof(TestFormShowMethodAttribute), false);
+                        foreach (TestFormShowMethodAttribute tmpAttr in attributes) // (キャストは必ず成功する)
+                        {                                               ///////    テスト用フォーム表示メソッド属性配列を繰り返す(シングルユース属性なので実際は１つだけ取得可能なはず)
+                            var actShowTestForm =                       ////////     メソッド情報からActionデリゲートインスタンスを生成する
+                                (Action)Delegate.CreateDelegate(
+                                        typeof(Action), methodInfo);
+
+                            var tmpMenuItem = new ToolStripMenuItem(tmpAttr.displayText, null, M_MnuWindow_ShowTestForm_Click)
+                            {                                           ////////     メニュー項目を生成する
+                                Tag = actShowTestForm,                  /////////      タグにActionデリゲートインスタンスを設定する
+                            };
+
+                            MnuWindow.DropDownItems.Add(tmpMenuItem);   ////////     メニュー項目を「ウィンドウ」メニューに追加する
+                        }
+                    }
+                }
+            }
+
+
 #if DEBUG   // DEBUGビルドのみ有効
             //------------------------------------------------------------
             /// テスト用メソッド情報を収集する
@@ -248,6 +278,36 @@ namespace Test_NovLab
 #if DEBUG   // DEBUGビルドのみ有効
             AutoTest.AddListener(this);
 #endif
+        }
+
+
+        //====================================================================================================
+        // メニューイベント
+        //====================================================================================================
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【メニュー項目：ウィンドウ - テスト用ウィンドウを開く_Click】
+        /// メニュー項目の Tag に設定されている Action デリゲートを実行し、テスト用フォームを開きます。
+        /// </summary>
+        //--------------------------------------------------------------------------------
+        protected void M_MnuWindow_ShowTestForm_Click(object sender, EventArgs e)
+        {
+            //------------------------------------------------------------
+            /// メニュー項目のTag に設定されている Action デリゲートを実行し、
+            ///-テスト用フォームを開く
+            //------------------------------------------------------------
+            ToolStripItem item = (ToolStripItem)sender;
+
+            if (item.Tag is Action actShowTestForm)
+            {                                                           //// Tag に設定されているオブジェクトが Action デリゲートの場合
+                actShowTestForm();                                      /////  Actionデリゲートを実行する
+            }
+            else
+            {                                                           //// Tag に設定されているオブジェクトが Action デリゲートでない場合(バグチェック)
+                Debug.Print("Tag プロパティーの内容が不正です：" +      /////  デバッグ出力(Tag内容不正)
+                            XObject.XNullSafeToString(item.Tag));
+            }
         }
 
 

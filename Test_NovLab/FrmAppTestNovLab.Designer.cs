@@ -42,15 +42,18 @@ namespace Test_NovLab
             this.TxtTestResult = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.MnuWindow = new System.Windows.Forms.ToolStripMenuItem();
             this.CMnuTestResult.SuspendLayout();
+            this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // BtnExecAllAutoTest
             // 
-            this.BtnExecAllAutoTest.Location = new System.Drawing.Point(8, 8);
+            this.BtnExecAllAutoTest.Location = new System.Drawing.Point(8, 32);
             this.BtnExecAllAutoTest.Name = "BtnExecAllAutoTest";
             this.BtnExecAllAutoTest.Size = new System.Drawing.Size(128, 32);
-            this.BtnExecAllAutoTest.TabIndex = 0;
+            this.BtnExecAllAutoTest.TabIndex = 1;
             this.BtnExecAllAutoTest.Text = "自動テスト全実行(&A)";
             this.BtnExecAllAutoTest.UseVisualStyleBackColor = true;
             this.BtnExecAllAutoTest.Click += new System.EventHandler(this.BtnExecAllAutoTest_Click);
@@ -62,10 +65,10 @@ namespace Test_NovLab
             this.LstTestMethod.Font = new System.Drawing.Font("ＭＳ ゴシック", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.LstTestMethod.FormattingEnabled = true;
             this.LstTestMethod.ItemHeight = 12;
-            this.LstTestMethod.Location = new System.Drawing.Point(8, 64);
+            this.LstTestMethod.Location = new System.Drawing.Point(8, 88);
             this.LstTestMethod.Name = "LstTestMethod";
             this.LstTestMethod.Size = new System.Drawing.Size(784, 136);
-            this.LstTestMethod.TabIndex = 2;
+            this.LstTestMethod.TabIndex = 3;
             this.LstTestMethod.DoubleClick += new System.EventHandler(this.LstTestMethod_DoubleClick);
             // 
             // LstTestResult
@@ -77,10 +80,10 @@ namespace Test_NovLab
             this.LstTestResult.Font = new System.Drawing.Font("ＭＳ ゴシック", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.LstTestResult.FormattingEnabled = true;
             this.LstTestResult.ItemHeight = 12;
-            this.LstTestResult.Location = new System.Drawing.Point(8, 224);
+            this.LstTestResult.Location = new System.Drawing.Point(8, 248);
             this.LstTestResult.Name = "LstTestResult";
-            this.LstTestResult.Size = new System.Drawing.Size(784, 208);
-            this.LstTestResult.TabIndex = 4;
+            this.LstTestResult.Size = new System.Drawing.Size(784, 184);
+            this.LstTestResult.TabIndex = 5;
             this.LstTestResult.SelectedIndexChanged += new System.EventHandler(this.LstTestResult_SelectedIndexChanged);
             // 
             // CMnuTestResult
@@ -138,42 +141,62 @@ namespace Test_NovLab
             this.TxtTestResult.Name = "TxtTestResult";
             this.TxtTestResult.ReadOnly = true;
             this.TxtTestResult.Size = new System.Drawing.Size(784, 113);
-            this.TxtTestResult.TabIndex = 5;
+            this.TxtTestResult.TabIndex = 6;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(8, 48);
+            this.label1.Location = new System.Drawing.Point(8, 72);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(74, 12);
-            this.label1.TabIndex = 1;
+            this.label1.TabIndex = 2;
             this.label1.Text = "テスト項目(&M):";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(8, 208);
+            this.label2.Location = new System.Drawing.Point(8, 232);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(73, 12);
-            this.label2.TabIndex = 3;
+            this.label2.TabIndex = 4;
             this.label2.Text = "テスト結果(&R):";
+            // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.MnuWindow});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(800, 24);
+            this.menuStrip1.TabIndex = 0;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // MnuWindow
+            // 
+            this.MnuWindow.Name = "MnuWindow";
+            this.MnuWindow.Size = new System.Drawing.Size(80, 20);
+            this.MnuWindow.Text = "ウィンドウ(&W)";
             // 
             // FrmAppTestNovLab
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 563);
+            this.Controls.Add(this.menuStrip1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.TxtTestResult);
             this.Controls.Add(this.LstTestResult);
             this.Controls.Add(this.LstTestMethod);
             this.Controls.Add(this.BtnExecAllAutoTest);
+            this.MainMenuStrip = this.menuStrip1;
             this.Name = "FrmAppTestNovLab";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "NovLabテスト";
             this.Load += new System.EventHandler(this.FrmAppTestNovLabBase_Load);
             this.CMnuTestResult.ResumeLayout(false);
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -193,6 +216,8 @@ namespace Test_NovLab
         private System.Windows.Forms.ToolStripMenuItem CMnuTestResult_CopyAll;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem MnuWindow;
     }
 }
 
