@@ -16,6 +16,14 @@ namespace Test_NovLab
 {
     public partial class ZZZDraft_Test_NovLab
     {
+        [ManualTestMethod("メイン画面のテスト用：他のテストを実行中は次のテストを行えないようにするブロック処理のテスト")]
+        public async static System.Threading.Tasks.Task SleepAsync()
+        {
+            Debug.Print("非同期メソッドのテスト中");
+            await System.Threading.Tasks.Task.Delay(5000);
+            Debug.Print("非同期メソッドのテスト完了");
+        }
+
 
         [ManualTestMethod("一時的テスト")]
         public static void ZZZ()
@@ -25,8 +33,6 @@ namespace Test_NovLab
             Debug.Print(strValue.XReplaceNewLineChars(" "));
             Debug.Print(strValue.XReplaceNewLineChars("\r\n"));
         }
-
-
 
 
         [ManualTestMethod("実験中：サロゲートペア、絵文字、異体字セレクタ")]
@@ -50,7 +56,7 @@ namespace Test_NovLab
 
 #if DEBUG
         /// <summary>
-        /// 【起動時自動テスト】
+        /// 【起動時自動テスト】現在作成中のものなど、起動時に自動で行いたいテストをここで呼び出します。
         /// </summary>
         public static void ZZZ_StartUpTest()
         {

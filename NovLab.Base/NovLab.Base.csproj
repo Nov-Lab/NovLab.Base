@@ -67,6 +67,8 @@
     <Compile Include="DebugSupport\FILEandLINE.cs" />
     <Compile Include="Threading\AsyncMethod.cs" />
     <Compile Include="Threading\AsyncMethodOptions.cs" />
+    <Compile Include="Threading\XWaitHandle.cs" />
+    <Compile Include="DebugSupport\AutoTest_XMLDoc.cs" />
     <Compile Include="Win32API\UnmanagedBuffer.cs" />
     <Compile Include="Windows\ApplicationHelper\MultiInstanceBlocker.cs" />
     <Compile Include="Base\NLMath.cs" />

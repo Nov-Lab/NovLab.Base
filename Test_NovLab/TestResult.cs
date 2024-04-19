@@ -4,6 +4,7 @@
 // @(h)TestResult.cs ver 0.23 ( '22.05.24 Nov-Lab ) 機能修正：例外メッセージを追加した。
 // @(h)TestResult.cs ver 0.24 ( '24.01.16 Nov-Lab ) 機能修正：実行前のインスタンス内容と実行後のインスタンス内容を追加した。
 // @(h)TestResult.cs ver 0.25 ( '24.01.17 Nov-Lab ) 機能修正：実行結果と予想結果は文字列で扱うようにした。
+// @(h)TestResult.cs ver 0.25a( '24.04.21 Nov-Lab ) その他  ：コメント整理。
 
 // @(s)
 // 　【テスト結果情報】自動テストのテスト結果を管理します。リストボックス項目として使用します。
@@ -56,17 +57,17 @@ namespace Test_NovLab
         public string expectResult;
 
         /// <summary>
-        /// 【例外メッセージ】
+        /// 【例外メッセージ】null = なし
         /// </summary>
         public string exceptionMessage;
 
         /// <summary>
-        /// 【実行前のインスタンス内容文字列】
+        /// 【実行前のインスタンス内容文字列】null = 静的メソッド
         /// </summary>
         public string befContent;
 
         /// <summary>
-        /// 【実行後のインスタンス内容文字列】
+        /// 【実行後のインスタンス内容文字列】null = 静的メソッド
         /// </summary>
         public string aftContent;
 
@@ -156,9 +157,9 @@ namespace Test_NovLab
         /// <param name="testPattern">     [in ]：テストパターン名[null = 省略]</param>
         /// <param name="execResult">      [in ]：実行結果文字列(戻り値 または 例外の型情報)</param>
         /// <param name="expectResult">    [in ]：予想結果文字列(戻り値 または 例外の型情報)</param>
-        /// <param name="exceptionMessage">[in ]：例外メッセージ</param>
-        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列(null = 静的メソッド)</param>
-        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列(null = 静的メソッド)</param>
+        /// <param name="exceptionMessage">[in ]：例外メッセージ[null = なし]</param>
+        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列[null = 静的メソッド]</param>
+        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列[null = 静的メソッド]</param>
         //--------------------------------------------------------------------------------
         public TestResult(AutoTestResultKind autoTestResult,
                           string testDescription, string testPattern,

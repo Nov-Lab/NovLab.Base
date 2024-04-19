@@ -4,6 +4,8 @@
 // @(h)FrmAppTestNovLab.cs ver 0.53 ( '24.01.17 Nov-Lab ) 機能修正：実行結果と予想結果は文字列で扱うようにした。
 // @(h)FrmAppTestNovLab.cs ver 0.53a( '24.01.21 Nov-Lab ) 仕変対応：AutoTest, ManualTestMethodInfo, AutoTestMethodInfo クラスの仕様変更に対応した。機能変更なし。
 // @(h)FrmAppTestNovLab.cs ver 0.54 ( '24.01.26 Nov-Lab ) 機能追加：テスト用フォームを自動的に検索・収集し、メニュー操作で表示できるようにした。
+// @(h)FrmAppTestNovLab.cs ver 0.65 ( '24.04.21 Nov-Lab ) 機能変更：非同期メソッドのテストに対応した。
+// @(h)FrmAppTestNovLab.cs ver 0.66 ( '24.04.24 Nov-Lab ) 機能修正：他のテストを実行中は次のテストを行えないようにブロック処理を追加した(非同期メソッドのテストを実行中は画面操作を行えるためブロック処理が必要)。
 
 // @(s)
 // 　【メイン画面】Test for NovLab のメイン画面です。
@@ -14,6 +16,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 using NovLab;
 using NovLab.DebugSupport;
@@ -37,6 +40,14 @@ namespace Test_NovLab
         //====================================================================================================
         // 内部フィールド
         //====================================================================================================
+
+        // ＜メモ＞
+        // ・マルチスレッド動作ではないため、フラグ操作に対する排他ロック制御は不要。
+        /// <summary>
+        /// 【テスト実行中フラグ】非同期で他のテストを実行中に次のテストを行えないようにブロックするためのフラグです。
+        /// </summary>
+        protected bool m_testExecutingFlag = false;
+
         /// <summary>
         /// 【テスト成功件数】
         /// </summary>
@@ -71,9 +82,9 @@ namespace Test_NovLab
         /// <param name="testPattern">     [in ]：テストパターン名[null = 省略]</param>
         /// <param name="execResult">      [in ]：実行結果文字列(戻り値 または 例外の型情報)</param>
         /// <param name="expectResult">    [in ]：予想結果文字列(戻り値 または 例外の型情報)</param>
-        /// <param name="exceptionMessage">[in ]：例外メッセージ</param>
-        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列(null = 静的メソッド)</param>
-        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列(null = 静的メソッド)</param>
+        /// <param name="exceptionMessage">[in ]：例外メッセージ[null = なし]</param>
+        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列[null = 静的メソッド]</param>
+        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列[null = 静的メソッド]</param>
         //--------------------------------------------------------------------------------
         public void NoticeTestResult(AutoTestResultKind autoTestResult, string testDescription, string testPattern,
                                      string execResult, string expectResult, string exceptionMessage,
@@ -118,8 +129,8 @@ namespace Test_NovLab
         /// </summary>
         /// <param name="testResult">[in ]：テスト結果(TestResult または 文字列)</param>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="MainFormTraceListener"/> などの外部クラスからも使用するため public メソッドにしています。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="MainFormTraceListener"/> などの外部クラスからも使用するため public メソッドにしています。<br/>
         /// </remarks>
         /// 関連リンク： <see cref="TestResult"/>
         //--------------------------------------------------------------------------------
@@ -319,36 +330,57 @@ namespace Test_NovLab
         /// <summary>
         /// 【自動テスト全実行ボタン_Click】すべての自動テストを実行します。
         /// </summary>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・非同期メソッドのテストにも対応するため、このメソッド自体も非同期メソッドにしています。<br/>
+        /// </remarks>
         //--------------------------------------------------------------------------------
-        private void BtnExecAllAutoTest_Click(object sender, EventArgs e)
+        private async void BtnExecAllAutoTest_Click(object sender, EventArgs e)
         {
 #if DEBUG   // DEBUGビルドのみ有効
             //------------------------------------------------------------
             /// すべての自動テストを実行する
             //------------------------------------------------------------
-            m_succeededCount = 0;                                       //// テスト成功件数 = 0 にクリアする
-            m_failedCount = 0;                                          //// テスト失敗件数 = 0 にクリアする
+            if (m_testExecutingFlag)
+            {                                                           //// テスト実行中フラグがセットされている場合(他のテストを実行中の場合)
+                M_Error_OtherTestExecuting();                           /////  テスト実行中エラー通知処理を行う
+                return;                                                 /////  関数終了
+            }
 
-            foreach (var tmpInfo in m_testMethodInfos)
-            {                                                           //// テスト用メソッド情報コレクションを繰り返す
-                if (tmpInfo.TestMethodKind == TestMethodKind.Auto)
-                {                                                       /////  自動テスト用メソッドの場合
-                    M_InvokeTest(tmpInfo);                              //////   テスト用メソッド実行処理を行う
+            try
+            {                                                           //// try開始
+                m_testExecutingFlag = true;                             /////  テスト実行中フラグ = true にセットする
+
+                m_succeededCount = 0;                                   /////  テスト成功件数 = 0 にクリアする
+                m_failedCount = 0;                                      /////  テスト失敗件数 = 0 にクリアする
+
+                foreach (var tmpInfo in m_testMethodInfos)
+                {                                                       /////  テスト用メソッド情報コレクションを繰り返す
+                    if (tmpInfo.TestMethodKind == TestMethodKind.Auto)
+                    {                                                   //////   自動テスト用メソッドの場合
+                        await M_InvokeTestAsync(tmpInfo);               ///////    テスト用メソッド実行処理を行う
+                    }
                 }
-            }
 
-            if (m_failedCount == 0)
-            {                                                           //// テスト失敗件数 = 0 の場合
-                AppendTestResult(                                       /////  クイックテスト結果(全成功)を追加する
-                    "すべてのテストに成功しました [成功:" + m_succeededCount + "]");
-            }
-            else
-            {                                                           //// テスト失敗件数 = 0 でない場合
-                AppendTestResult(                                       /////  クイックテスト結果(失敗あり)を追加する
-                    "失敗したテストがあります [成功:" + m_succeededCount + " / 失敗:" + m_failedCount + "]");
-            }
+                if (m_failedCount == 0)
+                {                                                       /////  テスト失敗件数 = 0 の場合
+                    AppendTestResult(                                   //////   自動テスト全実行結果(全成功)を追加する
+                        "すべてのテストに成功しました [成功:" + m_succeededCount + "]");
+                }
+                else
+                {                                                       /////  テスト失敗件数 = 0 でない場合
+                    AppendTestResult(                                   //////   自動テスト全実行結果(失敗あり)を追加する
+                        "失敗したテストがあります [成功:" + m_succeededCount + " / 失敗:" + m_failedCount + "]");
+                }
 
-            LstTestResult.Focus();                                      //// テスト結果リストボックスへフォーカスを移動する
+                LstTestResult.Focus();                                  /////  テスト結果リストボックスへフォーカスを移動する
+            }
+            finally
+            {                                                           //// finally：後始末
+                m_testExecutingFlag = false;                            /////  テスト実行中フラグ = false にリセットする
+            }
+#else   // DEBUG
+            await Task.Delay(0);    // リリースビルドにおけるCS1998ワーニングの抑制用
 #endif  // DEBUG
         }
 
@@ -358,12 +390,16 @@ namespace Test_NovLab
         /// 【テスト用メソッドリストボックス_DoubleClick】
         /// リストボックスで選択されているテスト用メソッドを実行します。
         /// </summary>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・非同期メソッドのテストにも対応するため、このメソッド自体も非同期メソッドにしています。<br/>
+        /// </remarks>
         //--------------------------------------------------------------------------------
-        private void LstTestMethod_DoubleClick(object sender, EventArgs e)
+        private async void LstTestMethod_DoubleClick(object sender, EventArgs e)
         {
 #if DEBUG   // DEBUGビルドのみ有効
             //------------------------------------------------------------
-            /// リストボックスで選択されているテスト用メソッドを実行する
+            /// 前準備
             //------------------------------------------------------------
             var selItem = LstTestMethod.SelectedItem;                   //// 選択中リスト項目を取得する
             if (selItem == null)
@@ -379,9 +415,30 @@ namespace Test_NovLab
                 return;
             }
 
-            M_InvokeTest(testMethodInfo);                               //// テスト用メソッド実行処理を行う
-            LstTestResult.Focus();                                      //// テスト結果リストボックスへフォーカスを移動する
-#endif
+
+            //------------------------------------------------------------
+            /// リストボックスで選択されているテスト用メソッドを実行する
+            //------------------------------------------------------------
+            if (m_testExecutingFlag)
+            {                                                           //// テスト実行中フラグがセットされている場合(他のテストを実行中の場合)
+                M_Error_OtherTestExecuting();                           /////  テスト実行中エラー通知処理を行う
+                return;                                                 /////  関数終了
+            }
+
+            try
+            {                                                           //// try開始
+                m_testExecutingFlag = true;                             /////  テスト実行中フラグ = true にセットする
+
+                await M_InvokeTestAsync(testMethodInfo);                /////  テスト用メソッド実行処理を行う
+                LstTestResult.Focus();                                  /////  テスト結果リストボックスへフォーカスを移動する
+            }
+            finally
+            {                                                           //// finally：後始末
+                m_testExecutingFlag = false;                            /////  テスト実行中フラグ = false にリセットする
+            }
+#else   // DEBUG
+            await Task.Delay(0);    // リリースビルドにおけるCS1998ワーニングの抑制用
+#endif  // DEBUG
         }
 
 
@@ -423,20 +480,48 @@ namespace Test_NovLab
 #if DEBUG   // DEBUGビルドのみ有効
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【テスト用メソッド実行】テスト用メソッド情報に従ってテストを実行します。
+        /// 【テスト用メソッド実行】テスト用メソッド情報に従ってテストを実行します。<br/>
+        /// ※上記処理を行う非同期操作タスクを生成します。<br/>
         /// </summary>
         /// <param name="testMethodInfo">[in ]：テスト用メソッド情報</param>
+        /// <returns>
+        /// 戻り値を返さない非同期操作タスク
+        /// </returns>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・非同期メソッドのテストにも対応するため、このメソッド自体も非同期メソッドにしています。<br/>
+        /// </remarks>
         //--------------------------------------------------------------------------------
-        protected void M_InvokeTest(TestMethodInfo testMethodInfo)
+        protected async Task M_InvokeTestAsync(TestMethodInfo testMethodInfo)
         {
             //------------------------------------------------------------
             /// テスト用メソッド情報に従ってテストを実行する
             //------------------------------------------------------------
             AppendTestResult("■" + testMethodInfo.ToString());         //// テスト結果にテスト用メソッドの表示名を追加する
-            testMethodInfo.Invoke();                                    //// テスト用メソッドを実行する
+            await testMethodInfo.InvokeAsync();                         //// テスト用メソッドを実行する
             AppendTestResult("");                                       //// テスト結果に空行を追加する
+            return;
         }
 #endif
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【テスト実行中エラー通知】テスト実行中エラーをユーザーに通知します。
+        /// </summary>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・非同期メソッドのテストを実行中は画面操作を行えるため、次のテストを行えないようにするブロック処理が必要です。<br/>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        protected void M_Error_OtherTestExecuting()
+        {
+            //------------------------------------------------------------
+            /// テスト実行中エラーをユーザーに通知する
+            //------------------------------------------------------------
+            System.Media.SystemSounds.Beep.Play();                                              //// Beep音を鳴らす
+            Debug.Print("非同期で他のテストを実行中のため、次のテストを行うことができません。");//// デバッグ出力(エラーメッセージ)
+        }
 
 
         //====================================================================================================

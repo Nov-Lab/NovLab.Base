@@ -7,6 +7,7 @@
 - NovLab.DebugSupport             ：デバッグ支援機能を提供します。
 - NovLab.Globalization            ：カルチャに関連する機能を提供します。
 - NovLab.IO.Mailslot              ：メールスロットによるプロセス間通信機能を提供します。
+- NovLab.Threading                ：マルチスレッド プログラミングのための機能を提供します。
 - NovLab.Win32                    ：Win32 API の操作機能を提供します。
 - NovLab.Windows.ApplicationHelper：Windowsアプリケーション用のヘルパー機能を提供します。
 

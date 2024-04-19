@@ -6,6 +6,9 @@
 // @(h)AutoTest.cs ver 0.25 ( '24.01.16 Nov-Lab ) 機能修正：テスト可能なメソッドの形式を拡充した
 // @(h)AutoTest.cs ver 0.26 ( '24.01.19 Nov-Lab ) 機能修正：テストオプションで定型文字列作成関数を指定できるようにした
 // @(h)AutoTest.cs ver 0.37 ( '24.01.21 Nov-Lab ) 仕様変更：リスナーを登録制とすることで、毎回引数で渡さなくてもいいようにした
+// @(h)AutoTest.cs ver 0.38 ( '24.04.22 Nov-Lab ) 機能修正：拡張メソッドに対するテスト内容文字列の書式を変更した(呼び出し書式と近くなるように、対象インスタンスの内容文字列は引数リストの中ではなくクラス名の後に記述するようにした)。
+// @(h)AutoTest.cs ver 0.39 ( '24.04.23 Nov-Lab ) 機能追加：非同期メソッドのテストに対応した(TestAsync メソッドと TestXAsync メソッドを新規追加)。
+// @(h)AutoTest.cs ver 0.39a( '24.04.24 Nov-Lab ) その他  ：コメント整理
 
 // @(s)
 // 　【自動テスト】メソッドの単体テストを自動化する機能を提供します。
@@ -20,6 +23,9 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Text;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 #if DEBUG   // DEBUGビルドのみ使用可能
@@ -41,9 +47,9 @@ namespace NovLab.DebugSupport
         /// <param name="testPattern">     [in ]：テストパターン名[null = 省略]</param>
         /// <param name="execResult">      [in ]：実行結果文字列(戻り値 または 例外の型情報)</param>
         /// <param name="expectResult">    [in ]：予想結果文字列(戻り値 または 例外の型情報)</param>
-        /// <param name="exceptionMessage">[in ]：例外メッセージ</param>
-        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列(null = 静的メソッド)</param>
-        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列(null = 静的メソッド)</param>
+        /// <param name="exceptionMessage">[in ]：例外メッセージ[null = なし]</param>
+        /// <param name="befContent">      [in ]：実行前のインスタンス内容文字列[null = 静的メソッド]</param>
+        /// <param name="aftContent">      [in ]：実行後のインスタンス内容文字列[null = 静的メソッド]</param>
         //--------------------------------------------------------------------------------
         void NoticeTestResult(AutoTestResultKind autoTestResult,
                               string testDescription, string testPattern,
@@ -66,22 +72,27 @@ namespace NovLab.DebugSupport
     //[-] 保留：インスタンス内容文字列：インスタンス.ToString() が「System.OrdinalComparer」のように型名だけを返す場合は抑制したい
 
 
-    // ＜メモ＞
-    // ・自動テスト用メソッドの作成状況
-    //   引数の個数              ：なし：１つ：２つ：３つ：
-    //   通常メソッド、戻り値なし： 〇 ： 〇 ： 〇 ：<未>：
-    //   通常メソッド、戻り値あり： 〇 ： 〇 ： 〇 ： 〇 ：
-    //   拡張メソッド、戻り値なし：<未>： 〇 ：<未>：<未>：
-    //   拡張メソッド、戻り値あり： 〇 ： 〇 ： 〇 ：<未>：
+    // ＜自動テスト実施メソッドの作成状況(必要になり次第、適宜拡充する)＞
+    // ・同期的メソッド          ＼引数：なし：１つ：２つ：３つ：
+    //   同期的通常メソッド、戻り値なし： ○ ： ○ ： ○ ：<未>：
+    //   同期的通常メソッド、戻り値あり： ○ ： ○ ： ○ ： ○ ：
+    //   同期的拡張メソッド、戻り値なし：<未>： ○ ：<未>：<未>：
+    //   同期的拡張メソッド、戻り値あり： ○ ： ○ ： ○ ：<未>：
+    //
+    // ・非同期メソッド          ＼引数：なし：１つ：２つ：３つ：
+    //   非同期通常メソッド、戻り値なし：<未>：<未>：<未>：<未>：
+    //   非同期通常メソッド、戻り値あり：<未>：<未>：<未>： ○ ：
+    //   非同期拡張メソッド、戻り値なし：<未>：<未>：<未>：<未>：
+    //   非同期拡張メソッド、戻り値あり：<未>：<未>： ○ ：<未>：
     //====================================================================================================
     /// <summary>
     /// 【自動テスト】メソッドの単体テストを自動化する機能を提供します。
     /// </summary>
     /// <remarks>
-    /// 補足<br></br>
+    /// 補足<br/>
     /// ・テストデータとテストコードを常備しておくことで、いつでも誰でも何度でも同じテストを実行することができ、
-    ///   ロジック修正時などのテストを効率化できます。<br></br>
-    /// ・特に、機能追加やロジック変更の際に、処理結果が変わってしまっていないかどうかを確認するのに効果的です。<br></br>
+    ///   ロジック修正時などのテストを効率化できます。<br/>
+    /// ・特に、機能追加やロジック変更の際に、処理結果が変わってしまっていないかどうかを確認するのに効果的です。<br/>
     /// </remarks>
     //====================================================================================================
     public static partial class AutoTest
@@ -125,8 +136,8 @@ namespace NovLab.DebugSupport
         /// </summary>
         /// <param name="message">[in ]：メッセージ文字列</param>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・自動テスト結果リスナーにだけメッセージを書き込みたいときは、Debug.Print ではなくこちらを使います。<br></br>
+        /// 補足<br/>
+        /// ・デバッグ出力をせずに自動テスト結果リスナーにだけメッセージを書き込みたいときは、Debug.Print ではなくこちらを使います。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static void Print(string message)
@@ -142,27 +153,23 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
-        // 自動テスト実施メソッド(通常メソッド、戻り値なし用)
+        // 自動テスト実施メソッド(同期的通常メソッド、戻り値なし用)
         //====================================================================================================
 
         // ＜メモ＞
         // ・引数 targetInstance はなくすことも可能だが、型引数を推論させるのに有効なので残している。
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値なし、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：instance.Action() 形式のメソッド(対象インスタンス操作系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値なし、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>instance.Action()</c> 形式のメソッド(対象インスタンス操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="actTestTarget"> [in ]：テスト対象Action</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には、予想される実行結果を格納したインスタンス、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="actTestTarget"> <inheritdoc cref="XMLDOC.Test.ActTestTarget"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Action_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TTarget>(
                                 TTarget targetInstance,
                                 Action actTestTarget,
@@ -177,8 +184,8 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription
-                = actTestTarget.Method.XGetName() + "()";               //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                actTestTarget.Method, testOptions);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -194,22 +201,18 @@ namespace NovLab.DebugSupport
         // ・引数 targetInstance はなくすことも可能だが、型引数を推論させるのに有効なので残している。
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値なし、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：instance.Action(param1) 形式のメソッド(対象インスタンス操作系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値なし、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>instance.Action(param1)</c> 形式のメソッド(対象インスタンス操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="actTestTarget"> [in ]：テスト対象Action</param>
-        /// <param name="inArg1">        [in ]：引数１</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には、予想される実行結果を格納したインスタンス、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="actTestTarget"> <inheritdoc cref="XMLDOC.Test.ActTestTarget"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Action_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TTarget, TArg1>(
                                 TTarget targetInstance,
                                 Action<TArg1> actTestTarget,
@@ -225,9 +228,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = actTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                actTestTarget.Method, testOptions,
+                inArg1);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -243,24 +246,20 @@ namespace NovLab.DebugSupport
         // ・引数 targetInstance はなくすことも可能だが、型引数を推論させるのに有効なので残している。
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値なし、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：instance.Action(param1, param2) 形式のメソッド(対象インスタンス操作系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値なし、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>instance.Action(param1, param2)</c> 形式のメソッド(対象インスタンス操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TArg2">引数２の型</typeparam>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="actTestTarget"> [in ]：テスト対象Action</param>
-        /// <param name="inArg1">        [in ]：引数１</param>
-        /// <param name="inArg2">        [in ]：引数２</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には、予想される実行結果を格納したインスタンス、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="actTestTarget"> <inheritdoc cref="XMLDOC.Test.ActTestTarget"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">        <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Action_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TTarget, TArg1, TArg2>(
                                 TTarget targetInstance,
                                 Action<TArg1, TArg2> actTestTarget,
@@ -277,10 +276,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = actTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) + ", " +
-                ToDisplayString(inArg2, testOptions.fncArg2RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                actTestTarget.Method, testOptions,
+                inArg1, inArg2);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -293,24 +291,20 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
-        // 自動テスト実施メソッド(通常メソッド、戻り値あり用)
+        // 自動テスト実施メソッド(同期的通常メソッド、戻り値あり用)
         //====================================================================================================
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値あり、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = instance.Func() 形式のメソッド(文字列操作系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値あり、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = instance.Func()</c> 形式のメソッド(文字列操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget">[in ]：テスト対象Func</param>
-        /// <param name="expectResult"> [in ]：予想結果</param>
-        /// <param name="testOptions">  [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"><inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="expectResult"> <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">  <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TResult>(
                                 Func<TResult> fncTestTarget,
                                     AutoTestResultInfo<TResult> expectResult,
@@ -324,8 +318,8 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription 
-                = fncTestTarget.Method.XGetName() + "()";               //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, testOptions);
 
             M_DoTest(testDescription, fncTestTarget.Target              //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -339,21 +333,17 @@ namespace NovLab.DebugSupport
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値あり、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = instance.Func(param1) 形式のメソッド(文字列判定系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値あり、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = instance.Func(param1)</c> 形式のメソッド(文字列判定系など)。<br/>
         /// </summary>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget">[in ]：テスト対象Func</param>
-        /// <param name="inArg1">       [in ]：引数１</param>
-        /// <param name="expectResult"> [in ]：予想結果</param>
-        /// <param name="testOptions">  [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"><inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="inArg1">       <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="expectResult"> <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">  <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TArg1, TResult>(
                                 Func<TArg1, TResult> fncTestTarget,
                                     TArg1 inArg1,
@@ -368,9 +358,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, testOptions,
+                inArg1);
 
             M_DoTest(testDescription, fncTestTarget.Target              //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -384,23 +374,19 @@ namespace NovLab.DebugSupport
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値あり、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = instance.Func(param1, param2) 形式のメソッド(文字列操作系など)。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値あり、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = instance.Func(param1, param2)</c> 形式のメソッド(文字列操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TArg2">引数２の型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget">[in ]：テスト対象Func</param>
-        /// <param name="inArg1">       [in ]：引数１</param>
-        /// <param name="inArg2">       [in ]：引数２</param>
-        /// <param name="expectResult"> [in ]：予想結果</param>
-        /// <param name="testOptions">  [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"><inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="inArg1">       <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">       <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="expectResult"> <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">  <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TArg1, TArg2, TResult>(
                                 Func<TArg1, TArg2, TResult> fncTestTarget,
                                     TArg1 inArg1, 
@@ -416,10 +402,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) + ", " +
-                ToDisplayString(inArg2, testOptions.fncArg2RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, testOptions,
+                inArg1, inArg2);
 
             M_DoTest(testDescription, fncTestTarget.Target              //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -433,25 +418,21 @@ namespace NovLab.DebugSupport
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(通常メソッド、戻り値あり、引数３つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = instance.Func(param1, param2, param3) 形式のメソッド。<br></br>
+        /// 【自動テスト(同期的通常メソッド、戻り値あり、引数３つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = instance.Func(param1, param2, param3)</c> 形式のメソッド。<br/>
         /// </summary>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TArg2">引数２の型</typeparam>
-        /// <typeparam name="TArg3">引数３の型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget">[in ]：テスト対象Func</param>
-        /// <param name="inArg1">       [in ]：引数１</param>
-        /// <param name="inArg2">       [in ]：引数２</param>
-        /// <param name="inArg3">       [in ]：引数３</param>
-        /// <param name="expectResult"> [in ]：予想結果</param>
-        /// <param name="testOptions">  [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <typeparam name="TArg3">  <inheritdoc cref="XMLDOC.Test.Arg3"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"><inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="inArg1">       <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">       <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="inArg3">       <inheritdoc cref="XMLDOC.Test.Arg3"/></param>
+        /// <param name="expectResult"> <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">  <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void Test<TArg1, TArg2, TArg3, TResult>(
                                 Func<TArg1, TArg2, TArg3, TResult> fncTestTarget,
                                     TArg1 inArg1, 
@@ -468,11 +449,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) + ", " +
-                ToDisplayString(inArg2, testOptions.fncArg2RegularString) + ", " +
-                ToDisplayString(inArg3, testOptions.fncArg3RegularString) + 
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, testOptions,
+                inArg1, inArg2, inArg3);
 
             M_DoTest(testDescription, fncTestTarget.Target              //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -486,27 +465,23 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
-        // 自動テスト実施メソッド(拡張メソッド、戻り値なし用)
+        // 自動テスト実施メソッド(同期的拡張メソッド、戻り値なし用)
         //====================================================================================================
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(拡張メソッド、戻り値なし、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：target.Func(param1) 形式の拡張メソッド(対象インスタンス操作系など)。<br></br>
+        /// 【自動テスト(同期的拡張メソッド、戻り値なし、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<paramref name="targetInstance"/><c>.Func(param1)</c> 形式の拡張メソッド(対象インスタンス操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <param name="actTestTarget"> [in ]：テスト対象Action</param>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="inArg1">        [in ]：引数１</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には、予想される実行結果を格納したインスタンス、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <param name="actTestTarget"> <inheritdoc cref="XMLDOC.Test.ActTestTarget"/></param>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Action_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void TestX<TTarget, TArg1>(
                                 Action<TTarget, TArg1> actTestTarget,
                                     TTarget targetInstance,
@@ -522,10 +497,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = "(拡張メソッド)" + actTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(targetInstance, testOptions.fncInstanceRegularString) + ", " +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionExt(             //// テスト内容文字列を作成する
+                actTestTarget.Method, targetInstance, testOptions,
+                inArg1);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -539,26 +513,22 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
-        // 自動テスト実施メソッド(拡張メソッド、戻り値あり用)
+        // 自動テスト実施メソッド(同期的拡張メソッド、戻り値あり用)
         //====================================================================================================
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(拡張メソッド、戻り値あり、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = target.Func() 形式の拡張メソッド(文字列操作系など)。<br></br>
+        /// 【自動テスト(同期的拡張メソッド、戻り値あり、引数なし)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = </c><paramref name="targetInstance"/><c>.Func()</c> 形式の拡張メソッド(文字列操作系など)。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget"> [in ]：テスト対象Func</param>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"> <inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void TestX<TTarget, TResult>(
                                  Func<TTarget, TResult> fncTestTarget,
                                     TTarget targetInstance,
@@ -573,9 +543,8 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = "(拡張メソッド)" + fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(targetInstance, testOptions.fncInstanceRegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionExt(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, targetInstance, testOptions);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -589,23 +558,19 @@ namespace NovLab.DebugSupport
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(拡張メソッド、戻り値あり、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = target.Func(param1) 形式の拡張メソッド。<br></br>
+        /// 【自動テスト(同期的拡張メソッド、戻り値あり、引数１つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = </c><paramref name="targetInstance"/><c>.Func(param1)</c> 形式の拡張メソッド。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget"> [in ]：テスト対象Func</param>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="inArg1">        [in ]：引数１</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"> <inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void TestX<TTarget, TArg1, TResult>(
                                  Func<TTarget, TArg1, TResult> fncTestTarget,
                                     TTarget targetInstance,
@@ -621,10 +586,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = "(拡張メソッド)" + fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(targetInstance, testOptions.fncInstanceRegularString) + ", " +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionExt(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, targetInstance, testOptions,
+                inArg1);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -639,25 +603,21 @@ namespace NovLab.DebugSupport
 
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【自動テスト(拡張メソッド、戻り値あり、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br></br>
-        /// テスト対象メソッド：result = target.Func(param1, param2) 形式の拡張メソッド。<br></br>
+        /// 【自動テスト(同期的拡張メソッド、戻り値あり、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = </c><paramref name="targetInstance"/><c>.Func(param1, param2)</c> 形式の拡張メソッド。<br/>
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
-        /// <typeparam name="TArg1">引数１の型</typeparam>
-        /// <typeparam name="TArg2">引数２の型</typeparam>
-        /// <typeparam name="TResult">戻り値の型</typeparam>
-        /// <param name="fncTestTarget"> [in ]：テスト対象Func</param>
-        /// <param name="targetInstance">[in ]：対象インスタンス</param>
-        /// <param name="inArg1">        [in ]：引数１</param>
-        /// <param name="inArg2">        [in ]：引数２</param>
-        /// <param name="expectResult">  [in ]：予想結果</param>
-        /// <param name="testOptions">   [in ]：テストパターン名またはテストオプション[null = 省略]</param>
-        /// <remarks>
-        /// 補足<br></br>
-        /// ・予想結果には TResult型の戻り値、または例外の型情報を指定します。<br></br>
-        /// </remarks>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"> <inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">        <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Sync"/></remarks>
         //--------------------------------------------------------------------------------
-        [Conditional("DEBUG")]
         public static void TestX<TTarget, TArg1, TArg2, TResult>(
                                  Func<TTarget, TArg1, TArg2, TResult> fncTestTarget,
                                     TTarget targetInstance,
@@ -674,11 +634,9 @@ namespace NovLab.DebugSupport
                 testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
             }
 
-            var testDescription = "(拡張メソッド)" + fncTestTarget.Method.XGetName() + "(" +
-                ToDisplayString(targetInstance, testOptions.fncInstanceRegularString) + ", " +
-                ToDisplayString(inArg1, testOptions.fncArg1RegularString) + ", " +
-                ToDisplayString(inArg2, testOptions.fncArg2RegularString) +
-                ")";                                                    //// テスト内容文字列を作成する
+            var testDescription = M_MakeTestDescriptionExt(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, targetInstance, testOptions,
+                inArg1, inArg2);
 
             M_DoTest(testDescription, targetInstance                    //// テスト実行処理を行う
                 , expectResult, testOptions, CB_TestBody);
@@ -692,6 +650,114 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
+        // 自動テスト実施メソッド(非同期通常メソッド、戻り値あり用)
+        //====================================================================================================
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【自動テスト(非同期通常メソッド、戻り値あり、引数３つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = await instance.Func(param1, param2, param3)</c> 形式の非同期通常メソッド。<br/>
+        /// </summary>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <typeparam name="TArg3">  <inheritdoc cref="XMLDOC.Test.Arg3"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"><inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="inArg1">       <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">       <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="inArg3">       <inheritdoc cref="XMLDOC.Test.Arg3"/></param>
+        /// <param name="expectResult"> <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">  <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <returns><inheritdoc cref="XMLDOC.Test.Common_Func_Async"/></returns>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Async"/></remarks>
+        //--------------------------------------------------------------------------------
+        public async static Task TestAsync<TArg1, TArg2, TArg3, TResult>(
+                                Func<TArg1, TArg2, TArg3, Task<TResult>> fncTestTarget,
+                                    TArg1 inArg1,
+                                    TArg2 inArg2,
+                                    TArg3 inArg3,
+                                    AutoTestResultInfo<TResult> expectResult,
+                                AutoTestOptions testOptions = null)
+        {
+            //------------------------------------------------------------
+            /// メソッドをテストする
+            //------------------------------------------------------------
+            if (testOptions == null)
+            {                                                           //// テストパターン名もテストオプションも指定されなかった場合
+                testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
+            }
+
+            var testDescription = M_MakeTestDescriptionNml(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, testOptions,
+                inArg1, inArg2, inArg3);
+
+            await M_DoTestAsync(testDescription, fncTestTarget.Target   //// テスト実行処理を行う
+                , expectResult, testOptions, CB_TestBody);
+
+
+            //------------------------------------------------------------
+            /// 【ローカル関数】Funcテスト本体
+            //------------------------------------------------------------
+            async Task<TResult> CB_TestBody()
+                => await fncTestTarget(inArg1, inArg2, inArg3);         //// テスト対象Funcを呼び出す
+        }
+
+
+        //====================================================================================================
+        // 自動テスト実施メソッド(非同期拡張メソッド、戻り値あり用)
+        //====================================================================================================
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【自動テスト(非同期拡張メソッド、戻り値あり、引数２つ)】メソッドをテストして結果を自動テスト結果リスナーへ通知します。<br/>
+        /// テスト対象メソッド：<c>result = await </c><paramref name="targetInstance"/><c>.XFunc(param1, param2)</c> 形式の非同期拡張メソッド。<br/>
+        /// </summary>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TArg1">  <inheritdoc cref="XMLDOC.Test.Arg1"/></typeparam>
+        /// <typeparam name="TArg2">  <inheritdoc cref="XMLDOC.Test.Arg2"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="fncTestTarget"> <inheritdoc cref="XMLDOC.Test.FncTestTarget"/></param>
+        /// <param name="targetInstance"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></param>
+        /// <param name="inArg1">        <inheritdoc cref="XMLDOC.Test.Arg1"/></param>
+        /// <param name="inArg2">        <inheritdoc cref="XMLDOC.Test.Arg2"/></param>
+        /// <param name="expectResult">  <inheritdoc cref="XMLDOC.Test.ExpectResult"/></param>
+        /// <param name="testOptions">   <inheritdoc cref="XMLDOC.Test.TestOptions"/></param>
+        /// <returns><inheritdoc cref="XMLDOC.Test.Common_Func_Async"/></returns>
+        /// <remarks><inheritdoc cref="XMLDOC.Test.Common_Func_Async"/></remarks>
+        //--------------------------------------------------------------------------------
+        public async static Task TestXAsync<TTarget, TArg1, TArg2, TResult>(
+                         Func<TTarget, TArg1, TArg2, Task<TResult>> fncTestTarget,
+                            TTarget targetInstance,
+                            TArg1 inArg1,
+                            TArg2 inArg2,
+                            AutoTestResultInfo<TResult> expectResult,
+                         AutoTestOptions testOptions = null)
+        {
+            //------------------------------------------------------------
+            /// メソッドをテストする
+            //------------------------------------------------------------
+            if (testOptions == null)
+            {                                                           //// テストパターン名もテストオプションも指定されなかった場合
+                testOptions = new AutoTestOptions();                    /////  テストオプション = 空のテストオプション
+            }
+
+            var testDescription = M_MakeTestDescriptionExt(             //// テスト内容文字列を作成する
+                fncTestTarget.Method, targetInstance, testOptions,
+                inArg1, inArg2);
+
+            await M_DoTestAsync(testDescription, targetInstance         //// テスト実行処理を行う
+                , expectResult, testOptions, CB_TestBody);
+
+
+            //------------------------------------------------------------
+            /// 【ローカル関数】Funcテスト本体
+            //------------------------------------------------------------
+            async Task<TResult> CB_TestBody()                           //// テスト対象Funcを呼び出す
+                => await fncTestTarget(targetInstance, inArg1, inArg2);
+        }
+
+
+        //====================================================================================================
         // 自動テスト実施用内部メソッド
         //====================================================================================================
 
@@ -699,11 +765,11 @@ namespace NovLab.DebugSupport
         // ・引数の数によって異なる部分(テスト内容文字列を作成するロジックと、テスト本体を実行するロジック)以外の共通部分。
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【テスト実行(戻り値なし版)】戻り値なしのメソッドをテストします。検証対象は TTarget型のインスタンスです。
+        /// 【同期的テスト実行(戻り値なし版)】戻り値なしの同期的メソッドをテストします。検証対象は <typeparamref name="TTarget"/> 型のインスタンスです。
         /// </summary>
-        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
         /// <param name="testDescription">[in ]：テスト内容文字列</param>
-        /// <param name="targetInstance"> [in ]：対象インスタンス(通常メソッドの場合は fncTestTarget.Target)</param>
+        /// <param name="targetInstance"> [in ]：対象インスタンス(拡張メソッドでない場合は <c>actTestTarget.Target</c>)</param>
         /// <param name="expectResult">   [in ]：予想結果</param>
         /// <param name="testOptions">    [in ]：テストオプション</param>
         /// <param name="actTestBody">    [in ]：Actionテスト本体</param>
@@ -713,6 +779,82 @@ namespace NovLab.DebugSupport
             TTarget targetInstance, AutoTestResultInfo<TTarget> expectResult,
             AutoTestOptions testOptions,
             Action actTestBody)
+        {
+            //------------------------------------------------------------
+            /// 非同期版のメソッドを呼び出して同じ内容の処理を同期的に行う
+            //------------------------------------------------------------
+            M_DoTestAsync(testDescription, targetInstance, expectResult, testOptions, AsyncWrapper).Wait();
+
+
+            //------------------------------------------------------------
+            // 【ローカル関数】同期的なActionテスト本体を非同期呼び出しするためのラッパー
+            //------------------------------------------------------------
+            async Task AsyncWrapper()
+            {
+                await Task.Delay(0);
+                actTestBody();
+            }
+        }
+
+
+        // ＜メモ＞
+        // ・引数の数によって異なる部分(テスト内容文字列を作成するロジックと、テスト本体を実行するロジック)以外の共通部分。
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【同期的テスト実行(戻り値あり版)】戻り値ありの同期的メソッドをテストします。検証対象は <typeparamref name="TResult"/> 型の戻り値です。
+        /// </summary>
+        /// <typeparam name="TTarget"><inheritdoc cref="XMLDOC.Test.TargetInstance"/></typeparam>
+        /// <typeparam name="TResult"><inheritdoc cref="XMLDOC.Test.ExpectResult"/></typeparam>
+        /// <param name="testDescription">[in ]：テスト内容文字列</param>
+        /// <param name="targetInstance"> [in ]：対象インスタンス(拡張メソッドでない場合は <c>fncTestTarget.Target</c>)</param>
+        /// <param name="expectResult">   [in ]：予想結果</param>
+        /// <param name="testOptions">    [in ]：テストオプション</param>
+        /// <param name="fncTestBody">    [in ]：Funcテスト本体</param>
+        //--------------------------------------------------------------------------------
+        private static void M_DoTest<TTarget, TResult>(
+            string testDescription,
+            TTarget targetInstance, AutoTestResultInfo<TResult> expectResult,
+            AutoTestOptions testOptions,
+            Func<TResult> fncTestBody)
+        {
+            //------------------------------------------------------------
+            /// 非同期版のメソッドを呼び出して同じ内容の処理を同期的に行う
+            //------------------------------------------------------------
+            M_DoTestAsync(testDescription, targetInstance, expectResult, testOptions, AsyncWrapper).Wait();
+
+
+            //------------------------------------------------------------
+            // 【ローカル関数】同期的なFuncテスト本体を非同期呼び出しするためのラッパー
+            //------------------------------------------------------------
+            async Task<TResult> AsyncWrapper()
+            {
+                await Task.Delay(0);
+                return fncTestBody();
+            }
+        }
+
+
+        // ＜メモ＞
+        // ・引数の数によって異なる部分(テスト内容文字列を作成するロジックと、テスト本体を実行するロジック)以外の共通部分。
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【非同期テスト実行(戻り値なし版)】戻り値なしの非同期メソッドをテストします。検証対象は <typeparamref name="TTarget"/> 型のインスタンスです。
+        /// </summary>
+        /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
+        /// <param name="testDescription">[in ]：テスト内容文字列</param>
+        /// <param name="targetInstance"> [in ]：対象インスタンス(拡張メソッドでない場合は <c>actTestTarget.Target</c>)</param>
+        /// <param name="expectResult">   [in ]：予想結果</param>
+        /// <param name="testOptions">    [in ]：テストオプション</param>
+        /// <param name="actTestBody">    [in ]：Actionテスト本体</param>
+        /// <returns>
+        /// 戻り値を返さない非同期操作タスク
+        /// </returns>
+        //--------------------------------------------------------------------------------
+        private async static Task M_DoTestAsync<TTarget>(
+            string testDescription,
+            TTarget targetInstance, AutoTestResultInfo<TTarget> expectResult,
+            AutoTestOptions testOptions,
+            Func<Task> actTestBody)
         {
             AutoTestResultInfo<TTarget> execResult; // 実行結果(TTarget型のインスタンス または 例外の型情報)
             AutoTestResultKind resultKind;          // 自動テスト結果
@@ -732,7 +874,7 @@ namespace NovLab.DebugSupport
 
             try
             {                                                           //// try開始
-                actTestBody();                                          /////  Actionテスト本体を呼び出す
+                await actTestBody();                                    /////  Actionテスト本体を呼び出す
                 execResult = targetInstance;                            /////  実行結果 = 対象インスタンス
             }
             catch (Exception ex)
@@ -777,27 +919,30 @@ namespace NovLab.DebugSupport
         // ・引数の数によって異なる部分(テスト内容文字列を作成するロジックと、テスト本体を実行するロジック)以外の共通部分。
         //--------------------------------------------------------------------------------
         /// <summary>
-        /// 【テスト実行(戻り値あり版)】戻り値ありのメソッドをテストします。検証対象は TResult型の戻り値です。
+        /// 【非同期テスト実行(戻り値あり版)】戻り値ありの非同期メソッドをテストします。検証対象は <typeparamref name="TResult"/> 型の戻り値です。
         /// </summary>
         /// <typeparam name="TTarget">対象インスタンスの型</typeparam>
         /// <typeparam name="TResult">戻り値の型</typeparam>
         /// <param name="testDescription">[in ]：テスト内容文字列</param>
-        /// <param name="targetInstance"> [in ]：対象インスタンス(通常メソッドの場合は fncTestTarget.Target)</param>
+        /// <param name="targetInstance"> [in ]：対象インスタンス(拡張メソッドでない場合は <c>fncTestTarget.Target</c>)</param>
         /// <param name="expectResult">   [in ]：予想結果</param>
         /// <param name="testOptions">    [in ]：テストオプション</param>
         /// <param name="fncTestBody">    [in ]：Funcテスト本体</param>
+        /// <returns>
+        /// 戻り値を返さない非同期操作タスク
+        /// </returns>
         //--------------------------------------------------------------------------------
-        private static void M_DoTest<TTarget, TResult>(
+        private async static Task M_DoTestAsync<TTarget, TResult>(
             string testDescription,
             TTarget targetInstance, AutoTestResultInfo<TResult> expectResult,
             AutoTestOptions testOptions,
-            Func<TResult> fncTestBody)
+            Func<Task<TResult>> fncTestBody)
         {
             AutoTestResultInfo<TResult> execResult; // 実行結果(TResult型の戻り値 または 例外の型情報)
             AutoTestResultKind resultKind;          // 自動テスト結果
             string exceptionMessage = null;         // 例外メッセージ
-            string befContent = null;               // 実行前のインスタンス内容文字列
-            string aftContent = null;               // 実行後のインスタンス内容文字列
+            string befContent = null;               // 実行前のインスタンス内容文字列 = null(静的メソッド) に初期化する
+            string aftContent = null;               // 実行後のインスタンス内容文字列 = null(静的メソッド) に初期化する
 
 
             //------------------------------------------------------------
@@ -811,7 +956,7 @@ namespace NovLab.DebugSupport
 
             try
             {                                                           //// try開始
-                execResult = fncTestBody();                             /////  Funcテスト本体を呼び出し、戻り値を実行結果に格納する
+                execResult = await fncTestBody();                       /////  Funcテスト本体を呼び出し、戻り値を実行結果に格納する
             }
             catch (Exception ex)
             {                                                           //// catch：すべての例外
@@ -851,6 +996,132 @@ namespace NovLab.DebugSupport
 
 
         //====================================================================================================
+        // テスト内容文字列作成用内部メソッド
+        //====================================================================================================
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【テスト内容文字列作成(通常メソッド用)】
+        /// 通常メソッド用のテスト内容文字列を作成します。
+        /// </summary>
+        /// <param name="methodInfo"> [in ]：テスト対象メソッドの <see cref="MethodInfo"/></param>
+        /// <param name="testOptions">[in ]：テストオプション</param>
+        /// <param name="args">       [in ]：引数内容配列(可変個の引数)</param>
+        /// <returns>
+        /// テスト内容文字列
+        /// </returns>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・「<c>className.methodName(arg1, arg2, ... argn)</c>」のような形式になります。<br/>
+        /// ・<c>arg1</c>～<c>argn</c>は、テストオプションで指定した定型文字列作成関数を使って文字列化されます。<br/>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        private static string M_MakeTestDescriptionNml(MethodInfo methodInfo, AutoTestOptions testOptions, params object[] args)
+            => M_MakeTestDescriptionCore(methodInfo, null, testOptions, args);
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【テスト内容文字列作成(拡張メソッド用)】
+        /// 拡張メソッド用のテスト内容文字列を作成します。
+        /// </summary>
+        /// <param name="methodInfo">    [in ]：テスト対象メソッドの <see cref="MethodInfo"/></param>
+        /// <param name="targetInstance">[in ]：対象インスタンス</param>
+        /// <param name="testOptions">   [in ]：テストオプション</param>
+        /// <param name="args">          [in ]：引数内容配列(可変個の引数)</param>
+        /// <returns>
+        /// テスト内容文字列
+        /// </returns>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・「<c>className(instanceString).methodName(arg1, arg2, ... argn)</c>」のような形式になります。<br/>
+        /// ・<c>instanceString</c>は、テストオプションで指定した定型文字列作成関数を使って文字列化されます。<br/>
+        /// ・<c>arg1</c>～<c>argn</c>は、テストオプションで指定した定型文字列作成関数を使って文字列化されます。<br/>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        private static string M_MakeTestDescriptionExt(MethodInfo methodInfo, object targetInstance, AutoTestOptions testOptions, params object[] args)
+            => M_MakeTestDescriptionCore(methodInfo, targetInstance, testOptions, args);
+
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【テスト内容文字列作成コア】
+        /// </summary>
+        /// <param name="methodInfo">    [in ]：テスト対象メソッドの <see cref="MethodInfo"/></param>
+        /// <param name="targetInstance">[in ]：対象インスタンス[null = 通常メソッド / nullでない = 拡張メソッド]</param>
+        /// <param name="testOptions">   [in ]：テストオプション</param>
+        /// <param name="args">          [in ]：引数内容配列(可変個の引数)</param>
+        /// <returns>
+        /// テスト内容文字列
+        /// </returns>
+        //--------------------------------------------------------------------------------
+        private static string M_MakeTestDescriptionCore(MethodInfo methodInfo, object targetInstance, AutoTestOptions testOptions, object[] args)
+        {
+            string methodName;  // メソッド名文字列
+            string prefix;      // プリフィックス
+
+            //------------------------------------------------------------
+            /// 前準備
+            //------------------------------------------------------------
+            if (args.Length > 5)
+            {
+                throw new ArgumentException("現時点で対応している引数の数は 5 つまでです。", nameof(args));
+            }
+            // 増やしたい場合は AutoTestOptions と、この下の配列作成部分を修正する
+
+
+            var fncArgRegularStrings = new RegularStringFunc[]          //// args と対応するように定型文字列作成関数配列を作成する
+            {
+                testOptions.fncArg1RegularString,
+                testOptions.fncArg2RegularString,
+                testOptions.fncArg3RegularString,
+                testOptions.fncArg4RegularString,
+                testOptions.fncArg5RegularString,
+            };
+
+
+            //------------------------------------------------------------
+            /// メソッド名文字列を作成する
+            //------------------------------------------------------------
+            if (targetInstance == null)
+            {                                                           //// 対象インスタンスが指定されていない場合(通常メソッドの場合)
+                methodName = methodInfo.DeclaringType.Name
+                           + "." + methodInfo.Name;                     /////  メソッド名文字列を作成する(＜クラス名＞.＜メソッド名＞形式)
+                prefix = "";                                            /////  プリフィックス = 空文字列
+            }
+            else
+            {                                                           //// 対象インスタンスが指定されている場合(拡張メソッドの場合)
+                var instanceString = ToDisplayString(targetInstance     /////  インスタンス内容文字列を作成する
+                                               , testOptions.fncInstanceRegularString);
+                methodName = methodInfo.DeclaringType.Name
+                           + "(" + instanceString + ")"
+                           + "." + methodInfo.Name;                     /////  メソッド名文字列を作成する(＜クラス名＞(＜インスタンス内容文字列＞).＜メソッド名＞形式)
+                prefix = "(拡張メソッド)";                              /////  プリフィックス = "(拡張メソッド)"
+            }
+
+
+
+            //------------------------------------------------------------
+            /// 引数文字列リストを作成する
+            //------------------------------------------------------------
+            var argStrings = new List<string>();                        //// 引数文字列リストを生成する
+
+            for (var idxTmp = 0; idxTmp < args.Length; idxTmp++)
+            {                                                           //// 引数内容配列の要素数分、繰り返す
+                argStrings.Add(ToDisplayString(args[idxTmp]             /////  対応する定型文字列作成関数を用いて引数文字列を作成し、リストに追加する
+                                             , fncArgRegularStrings[idxTmp]));
+            }
+
+
+            //------------------------------------------------------------
+            /// テスト内容文字列を作成する
+            //------------------------------------------------------------
+            return prefix + methodName                                  //// テスト内容文字列を作成して戻り値とし、関数終了
+                 + "(" + string.Join(", ", argStrings) + ")";
+        }
+
+
+        //====================================================================================================
         // ユーティリティーメソッド
         //====================================================================================================
 
@@ -868,13 +1139,15 @@ namespace NovLab.DebugSupport
         /// ③定型文字列作成関数が指定されている場合は定型文字列を作成。作成失敗時(float型に対して16進数文字列作成を指定した場合など)は次へ
         /// ④上記以外の場合は、オブジェクトの種類に応じて作成
         /// 
-        ///   オブジェクトの種類：テスト結果表示用文字列の書式           ：例
-        ///   ------------------：---------------------------------------：---------
-        ///   string型          ："＜文字列＞":＜文字数＞                ："ABCあいう":6
-        ///   StringBuilder型   ："＜文字列＞":＜文字数＞                ："ABCあいう":6
-        ///   char型            ：'＜文字＞'                             ：'A'
-        ///   コレクション      ：{＜要素１＞, ＜要素２＞, … ＜要素ｎ＞}：{123, 456, -1}
-        ///   上記以外          ：ToString() の結果
+        ///   オブジェクトの種類  ：テスト結果表示用文字列の書式             ：例
+        ///   --------------------：-----------------------------------------：------------------------------
+        ///   string型            ："＜文字列＞":＜文字数＞                  ："ABCあいう":6
+        ///   StringBuilder型     ："＜文字列＞":＜文字数＞                  ："ABCあいう":6
+        ///   char型              ：'＜文字＞'                               ：'A'
+        ///   WaitHandle型        ：待機ハンドルの型名[＜シグナル受信状態＞] ：ManualResetEventSlim[false]
+        ///   CancellationToken型 ：CancellationToken[＜取り消し要求状態＞]  ：CancellationToken[false] (CancellationToken.None の場合は "CancellationToken.None")
+        ///   コレクション        ：{＜要素１＞, ＜要素２＞, … ＜要素ｎ＞}  ：{123, 456, -1}
+        ///   上記以外            ：ToString() の結果
         /// </code>
         /// </returns>
         //--------------------------------------------------------------------------------
@@ -929,6 +1202,23 @@ namespace NovLab.DebugSupport
             if (target is char charValue)
             {                                                           //// 対象オブジェクトが char 型の場合
                 return "'" + charValue + "'";                           /////  char 型用に表示用文字列を作成して戻り値とし、関数終了
+            }
+
+            if (target is WaitHandle waitHandle)
+            {                                                           //// 対象オブジェクトが待機ハンドル(または派生クラス)の場合
+                return $"{target.GetType().Name}"
+                     + $"[{waitHandle.WaitOne(0)}]";                    /////  待機ハンドル用に表示用文字列を作成して戻り値とし、関数終了
+            }
+
+            if (target is CancellationToken token)
+            {                                                           //// 対象オブジェクトが CancellationToken 型の場合
+                if (token == CancellationToken.None)
+                {                                                       /////  CancellationToken.None の場合
+                    return "CancellationToken.None";                    //////   戻り値 = "CancellationToken.None" で関数終了
+                }
+
+                return "CancellationToken"
+                    + $"[{token.IsCancellationRequested}]";             /////  CancellationToken用に表示用文字列を作成して戻り値とし、関数終了
             }
 
             if (target is IEnumerable)
@@ -1052,4 +1342,5 @@ namespace NovLab.DebugSupport
     } // class
 
 } // namespace
+
 #endif
