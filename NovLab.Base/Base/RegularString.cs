@@ -1,5 +1,6 @@
 ﻿// @(h)RegularString.cs ver 0.00 ( '24.01.18 Nov-Lab ) 作成開始
 // @(h)RegularString.cs ver 0.51 ( '24.01.20 Nov-Lab ) ベータ版完成
+// @(h)RegularString.cs ver 0.52 ( '24.05.01 Nov-Lab ) RegularString.TimeoutMsecString メソッドを追加
 
 // @(s)
 // 　【定型文字列操作】定型文字列の作成機能を提供します。
@@ -7,6 +8,7 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Threading;
 using NovLab.DebugSupport;
 
 
@@ -19,8 +21,8 @@ namespace NovLab
     /// <param name="target">[in ]：対象オブジェクト</param>
     /// <returns>定型文字列</returns>
     /// <remarks>
-    /// 補足<br></br>
-    /// ・よく使う定型文字列作成関数は <see cref="RegularString"/> に用意してあります。<br></br>
+    /// 補足<br/>
+    /// ・よく使う定型文字列作成関数は <see cref="RegularString"/> クラスに用意してあります。<br/>
     /// </remarks>
     //====================================================================================================
     public delegate string RegularStringFunc(object target);
@@ -47,8 +49,8 @@ namespace NovLab
         /// 型名併記文字列
         /// </returns>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string WithTypeName(object target)
@@ -105,8 +107,8 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からはアドレス文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToAddress(object target)
@@ -145,7 +147,7 @@ namespace NovLab
         //--------------------------------------------------------------------------------
         /// <summary>
         /// 【定型文字列作成(アドレス文字列)】
-        /// IFormattable I/F を持つオブジェクトからメモリ上のアドレスを表す16進数文字列を作成します。<br></br>
+        /// IFormattable I/F を持つオブジェクトからメモリ上のアドレスを表す16進数文字列を作成します。<br/>
         /// 32ビット環境では「0x12345678」形式に、64ビット環境では「0x123456789ABCDEF0」形式になります。
         /// </summary>
         /// <param name="ifFormattable">[in ]：IFormattable I/F</param>
@@ -154,8 +156,8 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からはアドレス文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToAddress(IFormattable ifFormattable)
@@ -255,9 +257,9 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からは1バイト用16進数文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
-        /// ・対象オブジェクトが1バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが1バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToHex1byte(object target)
@@ -320,9 +322,9 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からは2バイト用16進数文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
-        /// ・対象オブジェクトが2バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが2バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToHex2byte(object target)
@@ -385,9 +387,9 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からは4バイト用16進数文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
-        /// ・対象オブジェクトが4バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが4バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToHex4byte(object target)
@@ -450,9 +452,9 @@ namespace NovLab
         /// </returns>
         /// <exception cref="FormatException">対象オブジェクトの型からは8バイト用16進数文字列を作成できません。</exception>
         /// <remarks>
-        /// 補足<br></br>
-        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br></br>
-        /// ・対象オブジェクトが8バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br></br>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが8バイトを超えるサイズの場合は、そのサイズに合わせた16進数文字列になります。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
         public static string ToHex8byte(object target)
@@ -502,6 +504,75 @@ namespace NovLab
             AutoTest.Test<object, string>(ToHex8byte, "String", typeof(FormatException), testOptions);
         }
 #endif
+
+
+        //====================================================================================================
+        // タイムアウト時間文字列
+        //====================================================================================================
+
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【定型文字列作成(タイムアウト時間文字列)】
+        /// オブジェクトからタイムアウト時間文字列(「＜タイムアウト時間＞ ms」形式)を作成します。<br/>
+        /// <see cref="Timeout.Infinite"/>(-1) が無期限待機を意味するタイムアウト時間に使用します。<br/>
+        /// </summary>
+        /// <param name="target">[in ]：対象オブジェクト(無期限に待機する場合は <see cref="Timeout.Infinite"/>(-1))</param>
+        /// <returns>
+        /// タイムアウト時間文字列
+        /// </returns>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが int 型でない場合、対象オブジェクトの文字列形式を返します。<br/>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        public static string TimeoutMsecString(object target)
+        {
+            //------------------------------------------------------------
+            /// オブジェクトからタイムアウト時間文字列を作成する
+            //------------------------------------------------------------
+            if (target is int timeoutMsec)
+            {                                                           //// 対象オブジェクトがint型の場合
+                if (timeoutMsec == Timeout.Infinite)
+                {                                                       /////  タイムアウト時間 = -1(無期限) の場合
+                    return "Timeout.Infinite";                          //////   戻り値 = "Timeout.Infinite" で関数終了
+                }
+                else
+                {                                                       /////  タイムアウト時間 = -1(無期限) でない場合
+                    return $"{timeoutMsec} ms";                         //////   戻り値 = "<タイムアウト時間> ms" で関数終了
+                }
+            }
+            else
+            {                                                           //// 対象オブジェクトがint型でない場合
+                return target.ToString();                               /////  戻り値 = 対象オブジェクトの文字列形式 で関数終了
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // 自動テスト用メソッド
+        //--------------------------------------------------------------------------------
+#if DEBUG
+        [AutoTestMethod(nameof(RegularString) + "." + nameof(TimeoutMsecString))]
+        public static void ZZZ_TimeoutMsecString()
+        {
+            var testOptions = new AutoTestOptions()
+            {                                           // テストオプション
+                fncArg1RegularString = WithTypeName,    // ・引数１(対象オブジェクト)は型名併記
+            };
+
+            AutoTest.Print("＜正常系＞");
+            AutoTest.Test<object, string>(TimeoutMsecString, 0, "0 ms", testOptions);
+            AutoTest.Test<object, string>(TimeoutMsecString, 123, "123 ms", testOptions);
+            AutoTest.Test<object, string>(TimeoutMsecString, -2, "-2 ms", testOptions);
+            AutoTest.Test<object, string>(TimeoutMsecString, Timeout.Infinite, "Timeout.Infinite", testOptions);
+            AutoTest.Print("");
+
+            AutoTest.Print("＜int型でない場合＞");
+            AutoTest.Test<object, string>(TimeoutMsecString, (byte)0xFF, "255", testOptions);
+            AutoTest.Test<object, string>(TimeoutMsecString, "文字列", "文字列", testOptions);
+        }
+#endif
+
 
         //[-] 保留：必要になったら作る。ToYen 「\123,456,789」形式。円金額用。"C"＋ja-JPカルチャ
 

@@ -61,6 +61,8 @@
     <Compile Include="Base\HexString.cs" />
     <Compile Include="Base\KeyedList.cs" />
     <Compile Include="Base\RegularString.cs" />
+    <Compile Include="Base\Remarks\Remarks_XmlUtil_ToXmlStringImprovement.cs" />
+    <Compile Include="Base\TimeoutStopwatch.cs" />
     <Compile Include="Base\XIntPtr.cs" />
     <Compile Include="DebugSupport\AutoTestOptions.cs" />
     <Compile Include="DebugSupport\AutoTestResultInfo.cs" />

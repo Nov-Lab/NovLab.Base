@@ -1,6 +1,6 @@
 ﻿// @(h)XWaitHandle.cs ver 0.00 ( '24.04.19 Nov-Lab ) プロトタイプを元に作成開始
 // @(h)XWaitHandle.cs ver 0.51 ( '24.04.23 Nov-Lab ) ベータ版完成
-// @(h)XWaitHandle.cs ver 0.51a( '24.04.24 Nov-Lab ) その他  ：コメント整理
+// @(h)XWaitHandle.cs ver 0.52 ( '24.05.02 Nov-Lab ) バグ修正：XWaitAnyAsync と XWaitOneAsync が無期限のタイムアウト時間に対応していなかった不具合を修正した
 
 // @(s)
 // 　【WaitHandle 拡張メソッド】WaitHandle クラスに拡張メソッドを追加します。
@@ -97,7 +97,7 @@ namespace NovLab.Threading
         /// <remarks>
         /// 補足<br/>
         /// ・<see cref="WaitHandle.WaitAny(WaitHandle[], int)"/> にキャンセルトークン監視処理を追加して、なおかつ非同期化した拡張メソッドです。<br/>
-        /// ・また、waitHandles を可変個引数にして呼び出しやすくしています。<br/>
+        /// ・また、<paramref name="waitHandles"/> を可変個引数にして呼び出しやすくしています。<br/>
         /// ・タイムアウト時間に 0 を指定した場合は、待機ハンドルの状態をテストして、すぐに制御を戻します。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
@@ -122,11 +122,11 @@ namespace NovLab.Threading
             //------------------------------------------------------------
             /// いずれかの待機ハンドルがシグナル受信状態になるまで、指定時間だけキャンセル付きで待機する
             //------------------------------------------------------------
-            var swTimeout = Stopwatch.StartNew();                       //// タイムアウト用ストップウォッチを生成して開始する
+            var swTimeout = TimeoutStopwatch.StartNew(timeoutMsec);     //// タイムアウトストップウォッチを生成して開始する
             var spinner = new SpinWait();                               //// スピン待機オブジェクトを生成する
 
             do
-            {                                                           //// タイムアウト時間を過ぎるまで、最低一回は繰り返す
+            {                                                           //// タイムアウトするまで、最低一回は繰り返す
                 //----------------------------------------
                 // 待機ハンドルのテスト
                 //----------------------------------------
@@ -148,12 +148,56 @@ namespace NovLab.Threading
                 spinner.SpinOnce();                                     //////   単一スピン待機する
                 await Task.Yield();                                     //////   他の非同期操作タスクに実行権を譲る
                 cancellationToken.ThrowIfCancellationRequested();       //////   キャンセルトークンをチェックし、取り消し状態の場合はOperationCanceledException例外をスローする
-            } while (swTimeout.ElapsedMilliseconds <= timeoutMsec);
+            } while (swTimeout.IsTimeout == false);
 
             return WaitHandle.WaitTimeout;                              //// タイムアウトした場合(ループを抜けた場合)、戻り値 = タイムアウト で関数終了
         }
 
 
+
+
+        //====================================================================================================
+        // 自動テスト用のユーティリティーメソッド
+        //====================================================================================================
+#if DEBUG
+        //--------------------------------------------------------------------------------
+        /// <summary>
+        /// 【定型文字列作成(WaitAny戻り値文字列)】
+        /// オブジェクトからWaitAny戻り値文字列を作成します。<br/>
+        /// <see cref="WaitHandle.WaitTimeout"/>(258) がタイムアウトを意味する戻り値に使用します。<br/>
+        /// </summary>
+        /// <param name="target">[in ]：対象オブジェクト(タイムアウトの場合は <see cref="WaitHandle.WaitTimeout"/>(258))</param>
+        /// <returns>
+        /// WaitAny戻り値文字列
+        /// </returns>
+        /// <remarks>
+        /// 補足<br/>
+        /// ・<see cref="RegularStringFunc"/> デリゲートに合致しています。<br/>
+        /// ・対象オブジェクトが int 型でない場合、対象オブジェクトの文字列形式を返します。<br/>
+        /// </remarks>
+        //--------------------------------------------------------------------------------
+        public static string ZZZ_WaitAnyResultString(object target)
+        {
+            //------------------------------------------------------------
+            /// オブジェクトからWaitAny戻り値文字列を作成する
+            //------------------------------------------------------------
+            if (target is int intResult)
+            {                                                           //// 対象オブジェクトがint型の場合
+                if (intResult == WaitHandle.WaitTimeout)
+                {                                                       /////  WaitAny戻り値 = WaitHandle.WaitTimeout(タイムアウト) の場合
+                    return "WaitHandle.WaitTimeout";                    //////   戻り値 = "WaitHandle.WaitTimeout" で関数終了
+                }
+                else
+                {                                                       /////  WaitAny戻り値 = WaitHandle.WaitTimeout(タイムアウト) でない場合
+                    return intResult.ToString();                        //////   戻り値 = WaitAny戻り値の文字列形式 で関数終了
+                }
+            }
+            else
+            {                                                           //// 対象オブジェクトがint型でない場合
+                return target.ToString();                               /////  戻り値 = 対象オブジェクトの文字列形式 で関数終了
+            }
+        }
+#endif
 
 
         //====================================================================================================
@@ -183,15 +227,15 @@ namespace NovLab.Threading
         [AutoTestMethod(nameof(XWaitHandle) + "." + nameof(XWaitAnyAsync))]
         public async static Task ZZZ_XWaitAnyAsync()
         {
-            var timerEvent0 = new ManualResetEventSlim();
-            var timerEvent1 = new ManualResetEventSlim();
+            var timerEvent0 = new ManualResetEventSlim();   // インデックス0用の待機ハンドル
+            var timerEvent1 = new ManualResetEventSlim();   // インデックス1用の待機ハンドル
 
-            var waitHandles1 = new WaitHandle[]
+            var waitHandles1 = new WaitHandle[]             // 待機ハンドルが１つの配列
             {
                 timerEvent0.WaitHandle,
             };
 
-            var waitHandles2 = new WaitHandle[]
+            var waitHandles2 = new WaitHandle[]             // 待機ハンドルが２つの配列
             {
                 timerEvent0.WaitHandle,
                 timerEvent1.WaitHandle,
@@ -202,6 +246,9 @@ namespace NovLab.Threading
             //--------------------------------------------------------
             AutoTest.Print("＜XWaitAnyAsync(int, CancellationToken, params WaitHandle[]) オーバーロード＞");
 
+            await SubRoutine(Timeout.Infinite, CancellationToken.None, waitHandles1, 0, "待機ハンドル１つ、１つめ(インデックス0)が無期限待機中にシグナル状態");
+            await SubRoutine(Timeout.Infinite, CancellationToken.None, waitHandles2, 1, "待機ハンドル２つ、２つめ(インデックス1)が無期限待機中にシグナル状態");
+
             await SubRoutine(1000, CancellationToken.None, waitHandles1, 0, "待機ハンドル１つ、１つめ(インデックス0)が時間内にシグナル状態");
             await SubRoutine(1000, CancellationToken.None, waitHandles2, 1, "待機ハンドル２つ、２つめ(インデックス1)が時間内にシグナル状態");
 
@@ -210,12 +257,22 @@ namespace NovLab.Threading
 
             using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
             {
-                await SubRoutine(1000, cts.Token, waitHandles1, typeof(OperationCanceledException), "待機ハンドル１つ、キャンセルトークンで取り消し");
+                await SubRoutine(Timeout.Infinite, cts.Token, waitHandles1, typeof(OperationCanceledException), "待機ハンドル１つ、無期限待機中にキャンセルトークンで取り消し");
             }
 
             using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
             {
-                await SubRoutine(1000, cts.Token, waitHandles2, typeof(OperationCanceledException), "待機ハンドル２つ、キャンセルトークンで取り消し");
+                await SubRoutine(Timeout.Infinite, cts.Token, waitHandles2, typeof(OperationCanceledException), "待機ハンドル２つ、無期限待機中にキャンセルトークンで取り消し");
+            }
+
+            using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
+            {
+                await SubRoutine(1000, cts.Token, waitHandles1, typeof(OperationCanceledException), "待機ハンドル１つ、時間内にキャンセルトークンで取り消し");
+            }
+
+            using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
+            {
+                await SubRoutine(1000, cts.Token, waitHandles2, typeof(OperationCanceledException), "待機ハンドル２つ、時間内にキャンセルトークンで取り消し");
             }
 
             await SubRoutine(-2, CancellationToken.None, waitHandles1, typeof(ArgumentOutOfRangeException), "タイムアウト時間に-1以外の負数を指定");
@@ -233,7 +290,11 @@ namespace NovLab.Threading
                                   AutoTestResultInfo<int> expectResult, // [in ]：予想結果(int値 または 例外の型情報)
                                   string testPattern = null)            // [in ]：テストパターン名[null = 省略]
             {
-                var testOptions = new AutoTestOptions(testPattern);
+                var testOptions = new AutoTestOptions(testPattern)
+                {
+                    fncArg1RegularString = RegularString.TimeoutMsecString, // 引数１はタイムアウト時間文字列で表示
+                    fncResultRegularString = ZZZ_WaitAnyResultString,       // 戻り値はWaitAny戻り値文字列で表示
+                };
 
                 timerEvent0.Reset();
                 timerEvent1.Reset();
@@ -263,13 +324,18 @@ namespace NovLab.Threading
             //--------------------------------------------------------
             AutoTest.Print("＜XWaitOneAsync(int, CancellationToken) オーバーロード＞");
 
+            await SubRoutine(Timeout.Infinite, CancellationToken.None, true, "無期限待機中にシグナル状態");
             await SubRoutine(1000, CancellationToken.None, true, "時間内にシグナル状態");
-
             await SubRoutine(TIMEOUT_MSEC, CancellationToken.None, false, "タイムアウト");
 
             using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
             {
-                await SubRoutine(1000, cts.Token, typeof(OperationCanceledException), "キャンセルトークンで取り消し");
+                await SubRoutine(Timeout.Infinite, cts.Token, typeof(OperationCanceledException), "無期限待機中にキャンセルトークンで取り消し");
+            }
+
+            using (var cts = new CancellationTokenSource(CANCEL_REQUEST_MSEC))
+            {
+                await SubRoutine(1000, cts.Token, typeof(OperationCanceledException), "時間内にキャンセルトークンで取り消し");
             }
 
             await SubRoutine(-2, CancellationToken.None, typeof(ArgumentOutOfRangeException), "タイムアウト時間に-1以外の負数を指定");
@@ -286,7 +352,10 @@ namespace NovLab.Threading
                                   AutoTestResultInfo<bool> expectResult,// [in ]：予想結果(bool値 または 例外の型情報)
                                   string testPattern = null)            // [in ]：テストパターン名[null = 省略]
             {
-                var testOptions = new AutoTestOptions(testPattern);
+                var testOptions = new AutoTestOptions(testPattern)
+                {
+                    fncArg1RegularString = RegularString.TimeoutMsecString, // 引数１はタイムアウト時間文字列で表示
+                };
 
                 timerEvent0.Reset();
 
@@ -340,7 +409,7 @@ namespace NovLab.Threading
             /// テスト本体
             //--------------------------------------------------------
             int repeatCounter = 0;                                  //// 反復回数カウンタ = 0 に初期化する
-            var swTimeout = Stopwatch.StartNew();                   //// タイムアウト用ストップウォッチを生成して開始する
+            var swTimeout = TimeoutStopwatch.StartNew(TIMEOUT_MSEC);//// タイムアウトストップウォッチを生成して開始する
             var spinner = new SpinWait();                           //// スピン待機オブジェクトを生成する
 
             do
@@ -370,7 +439,7 @@ namespace NovLab.Threading
                 // Thread.Sleep(1);                                    // CPU負荷はほぼゼロ。待機時間は約15ミリ秒 -> 長すぎる
 
                 repeatCounter++;                                    /////  反復回数カウンタに１加算する
-            } while (swTimeout.ElapsedMilliseconds <= TIMEOUT_MSEC);
+            } while (swTimeout.IsTimeout == false);
 
 
             //--------------------------------------------------------
