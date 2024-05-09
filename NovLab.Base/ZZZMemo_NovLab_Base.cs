@@ -18,6 +18,7 @@ namespace NovLab
     /// NovLab                          ：特定のカテゴリに属さない基本的かつ汎用的な機能を提供します。
     /// NovLab.DebugStation             ：デバッグ支援アプリ DebugStation との連携機能を提供します。
     /// NovLab.DebugSupport             ：デバッグ支援機能を提供します。
+    /// NovLab.EnumDisplayNameUti       ：列挙値から対応する表示名を取得するための仕組みを提供します。
     /// NovLab.Globalization            ：カルチャに関連する機能を提供します。
     /// NovLab.IO.Mailslot              ：メールスロットによるプロセス間通信機能を提供します。
     /// NovLab.Threading                ：マルチスレッド プログラミングのための機能を提供します。
@@ -36,4 +37,15 @@ namespace NovLab
     public class ZZZ_Memo_namespace { }
 #endif
 
-}
+
+    //====================================================================================================
+    /// <summary>
+    /// 【DEBUG版専用マーク】リリース版バイナリーファイルに含まれてはいけないクラスにつける目印です。
+    /// クラス名に"ZZZ"を含めたくない場合に使います。
+    /// </summary>
+    //====================================================================================================
+#if DEBUG
+    public interface ZZZ { }
+#endif
+
+} // namespace

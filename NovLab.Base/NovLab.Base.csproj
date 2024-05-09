@@ -54,8 +54,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Base\AttributeException.cs" />
     <Compile Include="Base\Cleanup.cs" />
+    <Compile Include="Base\IDetailString.cs" />
     <Compile Include="Base\DisposablePattern.cs" />
+    <Compile Include="Base\EnumerateIgnoreAttribute.cs" />
     <Compile Include="Base\EscapeConverter.cs" />
     <Compile Include="Base\FourCC.cs" />
     <Compile Include="Base\HexString.cs" />
@@ -67,6 +70,11 @@
     <Compile Include="DebugSupport\AutoTestOptions.cs" />
     <Compile Include="DebugSupport\AutoTestResultInfo.cs" />
     <Compile Include="DebugSupport\FILEandLINE.cs" />
+    <Compile Include="EnumDisplayNameUtil\EnumDisplayName.cs" />
+    <Compile Include="EnumDisplayNameUtil\EnumDisplayNameInfoAttribute.cs" />
+    <Compile Include="EnumDisplayNameUtil\EnumDisplayNameProvider.cs" />
+    <Compile Include="EnumDisplayNameUtil\NovLabEnumDisplayNameProvider.cs" />
+    <Compile Include="EnumDisplayNameUtil\_About_NovLab_EnumDisplayNameUtil.cs" />
     <Compile Include="Threading\AsyncMethod.cs" />
     <Compile Include="Threading\AsyncMethodOptions.cs" />
     <Compile Include="Threading\XWaitHandle.cs" />
