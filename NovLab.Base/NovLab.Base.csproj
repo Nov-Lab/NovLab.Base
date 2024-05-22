@@ -75,6 +75,10 @@
     <Compile Include="EnumDisplayNameUtil\EnumDisplayNameProvider.cs" />
     <Compile Include="EnumDisplayNameUtil\NovLabEnumDisplayNameProvider.cs" />
     <Compile Include="EnumDisplayNameUtil\_About_NovLab_EnumDisplayNameUtil.cs" />
+    <Compile Include="IO\Pipes\XPipeStream.cs" />
+    <Compile Include="IO\XStream.cs" />
+    <Compile Include="IO\XStream_Chunk.cs" />
+    <Compile Include="IO\XStream_XMLDOC.cs" />
     <Compile Include="Threading\AsyncMethod.cs" />
     <Compile Include="Threading\AsyncMethodOptions.cs" />
     <Compile Include="Threading\XWaitHandle.cs" />
@@ -100,10 +104,10 @@
     <Compile Include="DebugSupport\TestMethodAttribute.cs" />
     <Compile Include="DebugSupport\TestMethodInfo.cs" />
     <Compile Include="Globalization\StringDetailedComparer.cs" />
-    <Compile Include="IO\MailslotBase.cs" />
-    <Compile Include="IO\MailslotClient.cs" />
+    <Compile Include="IO\Mailslot\MailslotBase.cs" />
+    <Compile Include="IO\Mailslot\MailslotClient.cs" />
     <Compile Include="DebugStation\DebugUseBlocker.cs" />
-    <Compile Include="IO\MailslotServer.cs" />
+    <Compile Include="IO\Mailslot\MailslotServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Win32API\TestWin32Define.cs" />
     <Compile Include="Win32API\Win32API.cs" />
