@@ -1,6 +1,6 @@
 ﻿// @(h)XStream_Chunk.cs ver 0.00 ( '24.04.10 Nov-Lab ) 作成開始
 // @(h)XStream_Chunk.cs ver 0.21 ( '24.04.25 Nov-Lab ) アルファ版完成
-// @(h)XStream_Chunk.cs ver 0.21a( '24.05.22 Nov-Lab ) その他  ：コメント整理
+// @(h)XStream_Chunk.cs ver 0.22 ( '24.06.08 Nov-Lab ) バグ修正：XReadChunkAsync メソッドでタイムアウトが正しく機能していなかった不具合を修正した
 
 // @(s)
 // 　【Stream 拡張メソッド(データチャンク読み書き)】Stream の派生クラスに、データチャンクの読み書きを行う拡張メソッドを追加します。
@@ -177,7 +177,7 @@ namespace NovLab.IO
                     // チャンクサイズ
                     //----------------------------------------
                     var chunkSize =                                     //////   非同期でチャンクサイズを読み取る
-                        await target.XReadInt32Async(Timeout.Infinite, cancellationToken);
+                        await target.XReadInt32Async(Timeout.Infinite, ctsTotal.Token);
 
 #if VERBOSELOG
                     Debug.Print($"{nameof(XReadChunkAsync)}:チャンクサイズ:" + chunkSize);
@@ -192,7 +192,7 @@ namespace NovLab.IO
                     var readSize = await target.XReadAsync(
                                         chunkData, 0, chunkSize,
                                         Timeout.Infinite,
-                                        cancellationToken);             //////   非同期でチャンクデータ本体を読み取る
+                                        ctsTotal.Token);                //////   非同期でチャンクデータ本体を読み取る
 
 #if VERBOSELOG
                     Debug.Print($"{nameof(XReadChunkAsync)}:読み取りサイズ:" + readSize);

@@ -1,6 +1,7 @@
 ﻿// @(h)XPipeStream.cs ver 0.00 ( '24.05.16 Nov-Lab ) 作成開始
 // @(h)XPipeStream.cs ver 0.21 ( '24.05.16 Nov-Lab ) アルファ版完成
-// @(h)XPipeStream.cs ver 0.21a( '24.05.22 Nov-Lab ) その他  ：コメント整理
+// @(h)XPipeStream.cs ver 0.22 ( '24.05.30 Nov-Lab ) 機能修正：キャンセル処理のエミュレート精度を向上させた
+// @(h)XPipeStream.cs ver 0.22a( '24.06.04 Nov-Lab ) その他  ：コメント整理
 
 // @(s)
 // 　【PipeStream拡張メソッド】System.IO.Pipes.PipeStream クラスに拡張メソッドを追加します。
@@ -88,7 +89,7 @@ namespace NovLab.IO.Pipes
         ///   <see cref="Memo_PipeStreamCanNotCancel"/> を参照してください。<br/>
         /// <br/>
         /// 補足<br/>
-        /// ・<see cref="Stream.WriteAsync(byte[], int, int, CancellationToken)"/> のキャンセル処理を自力で行いつつ、タイムアウト処理を追加した拡張メソッドです。<br/>
+        /// ・<see cref="Stream.WriteAsync(byte[], int, int, CancellationToken)"/> のキャンセル処理を自力でエミュレートしつつ、タイムアウト処理を追加した拡張メソッドです。<br/>
         /// ・<see cref="XStream.XCallWriteAsync"/> メソッドを使うと、ストリームの種類に応じて適切なメソッドを呼び出すことができます。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
@@ -123,36 +124,28 @@ namespace NovLab.IO.Pipes
                     await target.WriteAsync(buffer, offset, count);     //////   非同期ストリーム書き込み処理を行う(キャンセル処理は自力で行うので、キャンセルトークンは指定しない)
                     ctsTimeout.CancelAfter(Timeout.Infinite);           //////   タイムアウト用キャンセルトークンソースのタイムアウト時間を解除する
                 }
-                catch (Exception ex)
+                catch
                 {                                                       /////  catch：すべての例外
                     // ＜メモ＞
-                    // ・通常、送信処理中にストリームがCloseされたときに発生する例外は IOException なのだが、
-                    //   キャンセルトークンの処理によってストリームがCloseされたときはなぜか OperationCanceledException になるらしい。
-                    //   WriteAsync へキャンセルトークンを渡しているわけではないので不可解なのだが、仕方がないので両方に対応しておく。
+                    // ・キャンセル処理エミュレートによって発生した例外かそうでない例外かを例外の種類によって判別したかったが、
+                    //   IOException だったり ObjectDisposedException だったり OperationCanceledException だったりと不安定で、
+                    //   他にも別パターンがあるかもしれないので、単純にキャンセルトークンソースの状態だけで判定することにした。
                     ctsTimeout.CancelAfter(Timeout.Infinite);           //////   タイムアウト用キャンセルトークンソースのタイムアウト時間を解除する
 
-                    if (ex is IOException ||
-                        ex is OperationCanceledException)
-                    {                                                   //////   I/Oエラー例外 または 操作取り消し例外 の場合(キャンセルやタイムアウトで発生しうる例外の場合)
-                        if (ctsTotal.IsCancellationRequested)
-                        {                                               ///////    取り消し要求による例外の場合(総合キャンセルトークンソースが取り消し要求状態の場合)
-                            if (ctsTimeout.IsCancellationRequested)
-                            {                                           ////////     タイムアウトによる取り消しの場合(タイムアウト用キャンセルトークンソースが取り消し要求状態の場合)
-                                throw new TimeoutException();           /////////      タイムアウト例外をスローする
-                            }
-                            else
-                            {                                           ////////     タイムアウトによる取り消しでない場合
-                                throw new OperationCanceledException(); /////////      操作取り消し例外をスローする
-                            }
+                    if (ctsTotal.IsCancellationRequested)
+                    {                                                   //////   取り消し要求による例外の場合(総合キャンセルトークンソースが取り消し要求状態の場合)
+                        if (ctsTimeout.IsCancellationRequested)
+                        {                                               ///////    タイムアウトによる取り消しの場合(タイムアウト用キャンセルトークンソースが取り消し要求状態の場合)
+                            throw new TimeoutException();               ////////     タイムアウト例外をスローする
                         }
                         else
-                        {                                               ///////    取り消し要求による例外でない場合(総合キャンセルトークンソースが取り消し要求状態でない場合)
-                            throw;                                      ////////     通常のI/Oエラーと判断して、例外を再スローする
+                        {                                               ///////    タイムアウトによる取り消しでない場合
+                            throw new OperationCanceledException();     ////////     操作取り消し例外をスローする
                         }
                     }
                     else
-                    {                                                   //////   I/Oエラー例外 でも 操作取り消し例外 でもない場合(キャンセルやタイムアウトで発生しうる例外でない場合)
-                        throw;                                          ///////    例外を再スローする
+                    {                                                   //////   取り消し要求による例外でない場合(総合キャンセルトークンソースが取り消し要求状態でない場合)
+                        throw;                                          ///////    通常のI/Oエラーと判断して、例外を再スローする
                     }
                 }
             }
@@ -184,7 +177,7 @@ namespace NovLab.IO.Pipes
         ///   <see cref="Memo_PipeStreamCanNotCancel"/> を参照してください。<br/>
         /// <br/>
         /// 補足<br/>
-        /// ・<see cref="Stream.ReadAsync(byte[], int, int, CancellationToken)"/>  のキャンセル処理を自力で行いつつ、タイムアウト処理を追加した拡張メソッドです。<br/>
+        /// ・<see cref="Stream.ReadAsync(byte[], int, int, CancellationToken)"/>  のキャンセル処理を自力でエミュレートしつつ、タイムアウト処理を追加した拡張メソッドです。<br/>
         /// ・<see cref="XStream.XCallReadAsync"/> メソッドを使うと、ストリームの種類に応じて適切なメソッドを呼び出すことができます。<br/>
         /// </remarks>
         //--------------------------------------------------------------------------------
@@ -213,15 +206,39 @@ namespace NovLab.IO.Pipes
             {
                 ctsTotal.Token.Register(target.Close);                  /////  キャンセルされたらストリームを閉じるように総合キャンセルトークンを構成する
 
-                ctsTimeout.CancelAfter(millisecondsTimeout);            /////  タイムアウト用キャンセルトークンソースにタイムアウト時間を設定する
-                var bytesReaded =
-                    await target.ReadAsync(buffer, offset, count);      /////  非同期ストリーム読み取り処理を行い、読み取ったバイト数を取得する(キャンセル処理は自力で行うので、キャンセルトークンは指定しない)
-                ctsTimeout.CancelAfter(Timeout.Infinite);               /////  タイムアウト用キャンセルトークンソースのタイムアウト時間を解除する
+                try
+                {                                                       /////  try開始
+                    ctsTimeout.CancelAfter(millisecondsTimeout);        //////   タイムアウト用キャンセルトークンソースにタイムアウト時間を設定する
+                    var bytesReaded =
+                        await target.ReadAsync(buffer, offset, count);  //////   非同期ストリーム読み取り処理を行い、読み取ったバイト数を取得する(キャンセル処理は自力で行うので、キャンセルトークンは指定しない)
+                    ctsTimeout.CancelAfter(Timeout.Infinite);           //////   タイムアウト用キャンセルトークンソースのタイムアウト時間を解除する
 
-                if (bytesReaded < count)
-                {                                                       /////  読み取ったバイト数 < ストリームから読み取る最大バイト数 の場合(キャンセルやタイムアウトで中断された可能性がある場合)
+                    // ＜メモ＞
+                    // ・キャンセル処理エミュレートによる例外は発生したりしなかったりと不安定なので、
+                    //   両方のパターンに対応しておいた。
+                    if (bytesReaded < count)
+                    {                                                   //////   読み取ったバイト数 < ストリームから読み取る最大バイト数 の場合(キャンセルやタイムアウトで中断された可能性がある場合)
+                        if (ctsTotal.IsCancellationRequested)
+                        {                                               ///////    取り消し要求による読み取り中断の場合(総合キャンセルトークンソースが取り消し要求状態の場合)
+                            if (ctsTimeout.IsCancellationRequested)
+                            {                                           ////////     タイムアウトによる取り消しの場合(タイムアウト用キャンセルトークンソースが取り消し要求状態の場合)
+                                throw new TimeoutException();           /////////      タイムアウト例外をスローする
+                            }
+                            else
+                            {                                           ////////     タイムアウトによる取り消しでない場合
+                                throw new OperationCanceledException(); /////////      操作取り消し例外をスローする
+                            }
+                        }
+                    }
+
+                    return bytesReaded;                                 //////   戻り値 = 読み取ったバイト数 で関数終了
+                }
+                catch
+                {                                                       /////  catch：すべての例外
+                    ctsTimeout.CancelAfter(Timeout.Infinite);           //////   タイムアウト用キャンセルトークンソースのタイムアウト時間を解除する
+
                     if (ctsTotal.IsCancellationRequested)
-                    {                                                   //////   取り消し要求による読み取り中断の場合(総合キャンセルトークンソースが取り消し要求状態の場合)
+                    {                                                   //////   取り消し要求による例外の場合(総合キャンセルトークンソースが取り消し要求状態の場合)
                         if (ctsTimeout.IsCancellationRequested)
                         {                                               ///////    タイムアウトによる取り消しの場合(タイムアウト用キャンセルトークンソースが取り消し要求状態の場合)
                             throw new TimeoutException();               ////////     タイムアウト例外をスローする
@@ -231,9 +248,11 @@ namespace NovLab.IO.Pipes
                             throw new OperationCanceledException();     ////////     操作取り消し例外をスローする
                         }
                     }
+                    else
+                    {                                                   //////   取り消し要求による例外でない場合(総合キャンセルトークンソースが取り消し要求状態でない場合)
+                        throw;                                          ///////    通常のI/Oエラーと判断して、例外を再スローする
+                    }
                 }
-
-                return bytesReaded;                                     /////  戻り値 = 読み取ったバイト数 で関数終了
             }
         }
 
